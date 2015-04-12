@@ -12,7 +12,11 @@ class NeuralNetwork(val layers: List[Layer], val objective: ObjectiveFunction, v
 
   def momentum: List[DoubleMatrix] = weights.map(_.mul(0))
 
-  def eval(data: DataSet): Double = Scores(compute(data.inputs), data.targets).average
+  def eval(data: DataSet): Double = {
+    val outputs = compute(data.inputs)
+
+    Scores(outputs, data.targets).average
+  }
 
   def copy(layers: List[Layer]): NeuralNetwork =
     new NeuralNetwork(layers, objective, weightDecay)
@@ -25,7 +29,7 @@ class NeuralNetwork(val layers: List[Layer], val objective: ObjectiveFunction, v
     weightDecay(layers, objective(outputs.last.activationOutput, data.targets))
   }
 
-  private def compute(inputs: DoubleMatrix): DoubleMatrix =
+  def compute(inputs: DoubleMatrix): DoubleMatrix =
     propagate(inputs).last.activationOutput
 
   private def propagate(inputs: DoubleMatrix): List[LayerState] =
