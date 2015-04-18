@@ -28,29 +28,21 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
     }
   }
 
-  def propagateUp(v: Array[Int], i: Int): Double = {
-    val w = W(i)
-    val b = hBias(i)
-
-    Fn.sigmoid(
-      Range(0, numVisible).toArray.foldLeft(0.0) { (t, j) => t + w(j) * v(j) } + b
-    )
-  }
-
-  lazy val wmat = MatBuilder(numHidden, numVisible, W)
-  lazy val bmat = MatBuilder(numHidden, hBias)
+  def wmat = MatBuilder(numHidden, numVisible, W)
+  def hbmat = MatBuilder(numHidden, hBias)
+  def vbmat = MatBuilder(numVisible, vBias)
 
   def propagateUpM(v: DoubleMatrix): DoubleMatrix = {
-    Logistic(wmat.transpose.mmul(v).addColumnVector(bmat))
+    Logistic(wmat.transpose.mmul(v).addColumnVector(hbmat))
   }
 
-  def propagateDown(h: Array[Int], i: Int): Double = {
-    Fn.sigmoid(
-      Range(0, numHidden).toArray.foldLeft(0.0) { (t, j) => t + W(j)(i) * h(j) } + vBias(i)
-    )
+  def propagateDownM(v: DoubleMatrix): DoubleMatrix = {
+    println(v.rows, v.columns)
+    println(wmat.rows, wmat.columns)
+    Logistic(wmat.mmul(v).addColumnVector(vbmat))
   }
 
-  def reconstruct(dataSet:DoubleMatrix): Array[Array[Double]] = {
+  def reconstructM(dataSet:DoubleMatrix): Array[Array[Double]] = {
     import scala.collection.JavaConversions._
 
     val h = propagateUpM(dataSet).columnsAsList()
@@ -64,7 +56,26 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
     }.toArray
   }
 
-  def reconstructOld(v: Array[Array[Int]]): Array[Array[Double]] = {
+  @deprecated
+  def propagateDown(h: Array[Int], i: Int): Double = {
+    val b = vBias(i)
+    Fn.sigmoid(
+      Range(0, numHidden).toArray.foldLeft(0.0) { (t, j) => t + W(j)(i) * h(j) } + b
+    )
+  }
+
+  @deprecated
+  def propagateUp(v: Array[Int], i: Int): Double = {
+    val w = W(i)
+    val b = hBias(i)
+
+    Fn.sigmoid(
+      Range(0, numVisible).toArray.foldLeft(0.0) { (t, j) => t + w(j) * v(j) } + b
+    )
+  }
+
+  @deprecated
+  def reconstruct(v: Array[Array[Int]]): Array[Array[Double]] = {
     v.map { v =>
       val h = Range(0, numHidden).toArray.map { i =>
         propagateUp(v, i)
