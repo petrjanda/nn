@@ -84,20 +84,24 @@ case class ContrastiveDivergenceTrainer(iterations:Int, learningRate:Double, k:I
     val numHidden = rbm.numHidden
     val numVisible = rbm.numVisible
 
-    val nv_means: Array[Double] = new Array[Double](rbm.numVisible)
-    val nv_samples: Array[Int] = new Array[Int](rbm.numVisible)
+    var nv_means: Array[Double] = new Array[Double](rbm.numVisible)
+    var nv_samples: Array[Int] = new Array[Int](rbm.numVisible)
     var nh_means: Array[Double] = new Array[Double](rbm.numHidden)
     var nh_samples: Array[Int] = new Array[Int](rbm.numHidden)
 
+    val gibbs = new GibbsSampler(rbm)
+
     /* CD-k */
-    val (ph_mean, ph_sample) = sampleHGivenV(rbm, input)
+    val (ph_mean, ph_sample) = gibbs.sampleHGivenV(input)
 
     0.until(k).foreach { step =>
       val sample = if(step == 0) ph_sample else nh_samples
-      val gibbs = gibbs_hvh(rbm, sample, nv_means, nv_samples)
+      val g = gibbs.sampleGibbsHVH(sample, nv_means, nv_samples)
 
-      nh_means = gibbs._1
-      nh_samples = gibbs._2
+      nv_means = g._1
+      nv_samples = g._2
+      nh_means = g._3
+      nh_samples = g._4
     }
 
     // Update weights and bias
@@ -113,25 +117,37 @@ case class ContrastiveDivergenceTrainer(iterations:Int, learningRate:Double, k:I
       rbm.vBias(i) += lr * (input(i) - nv_samples(i)) / rbm.N
     }
   }
-
-  def gibbs_hvh(rbm:RBM, h0_sample: Array[Int], nv_means: Array[Double], nv_samples: Array[Int]) = {
-    sampleVGivenH(rbm, h0_sample, nv_means, nv_samples)
-    sampleHGivenV(rbm, nv_samples)
-  }
-
-  def sampleHGivenV(rbm:RBM, v0_sample: Array[Int]) = {
-    val mean = 0.until(rbm.numHidden).map { i => rbm.propagateUp(v0_sample, rbm.W(i), rbm.hBias(i)) }.toArray
-    val sample = mean.map { s => Fn.binomial(1, s, rbm.rng) }
-
-    (mean, sample)
-  }
-
-  def sampleVGivenH(rbm:RBM, h0_sample: Array[Int], mean: Array[Double], sample: Array[Int]) {
-    var i: Int = 0
-    for(i <- 0 until rbm.numVisible) {
-      mean(i) = rbm.propagateDown(h0_sample, i, rbm.vBias(i))
-      sample(i) = Fn.binomial(1, mean(i), rbm.rng)
-    }
-  }
 }
 
+class GibbsSampler(rbm:RBM) {
+  val rng = rbm.rng
+  val numHidden = rbm.numHidden
+  val numVisible = rbm.numVisible
+
+  val W = rbm.W
+  val hBias = rbm.hBias
+  val vBias = rbm.vBias
+
+  def sampleGibbsHVH(h0Sample: Array[Int], nvMeans: Array[Double], nvSamples: Array[Int]) = {
+    val vh = sampleVGivenH(h0Sample)
+    val hv = sampleHGivenV(vh._2)
+
+    (vh._1, vh._2, hv._1, hv._2)
+  }
+
+  def sampleHGivenV(v0Sample: Array[Int]) = {
+    val mean = Range(0, numHidden).map { i => rbm.propagateUp(v0Sample, W(i), hBias(i)) }.toArray
+
+    (mean, sample(mean, rng))
+  }
+
+  def sampleVGivenH(h0Sample: Array[Int]): (Array[Double], Array[Int]) = {
+    val mean = Range(0, numVisible).map { i => rbm.propagateDown(h0Sample, i, vBias(i)) }.toArray
+
+    (mean, sample(mean, rng))
+  }
+
+  private def sample(m:Array[Double], rng:Random) = {
+    m.map { s => Fn.binomial(1, s, rng) }
+  }
+}
