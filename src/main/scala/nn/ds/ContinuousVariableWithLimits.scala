@@ -13,9 +13,9 @@ case class ContinuousVariableWithLimits[T](comp:(T, T) => Boolean, limits:T*) ex
 }
 
 case class ContinuousVariable(min:Int, max:Int) {
-  def size = 100
+  def size = 1
 
   def range = max - min
 
-  def apply(v:Int):List[Double] = List.fill(100)(((v - min) / range).toDouble)
+  def apply(v:Int):List[Double] = List.fill(1)(((v - min) / range).toDouble)
 }
