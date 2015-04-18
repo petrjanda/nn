@@ -15,22 +15,25 @@ class RBM(val N: Int, val numVisible: Int, val numHidden: Int, var rng: Random) 
     }
   }
 
-  def propagateUp(v: Array[Int], w: Array[Double], b: Double): Double = {
+  def propagateUp(v: Array[Int], i: Int): Double = {
+    val w = W(i)
+    val b = hBias(i)
+
     Fn.sigmoid(
       Range(0, numVisible).toArray.foldLeft(0.0) { (t, j) => t + w(j) * v(j) } + b
     )
   }
 
-  def propagateDown(h: Array[Int], i: Int, b: Double): Double = {
+  def propagateDown(h: Array[Int], i: Int): Double = {
     Fn.sigmoid(
-      Range(0, numHidden).toArray.foldLeft(0.0) { (t, j) => t + W(j)(i) * h(j) } + b
+      Range(0, numHidden).toArray.foldLeft(0.0) { (t, j) => t + W(j)(i) * h(j) } + vBias(i)
     )
   }
 
   def reconstruct(v: Array[Array[Int]]): Array[Array[Double]] = {
     v.map { v =>
       val h = Range(0, numHidden).toArray.map { i =>
-        propagateUp(v, W(i), hBias(i))
+        propagateUp(v, i)
       }
 
       val layer = Layer(numHidden, vBias, W, h)
@@ -124,10 +127,6 @@ class GibbsSampler(rbm:RBM) {
   val numHidden = rbm.numHidden
   val numVisible = rbm.numVisible
 
-  val W = rbm.W
-  val hBias = rbm.hBias
-  val vBias = rbm.vBias
-
   def sampleGibbsHVH(h0Sample: Array[Int], nvMeans: Array[Double], nvSamples: Array[Int]) = {
     val vh = sampleVGivenH(h0Sample)
     val hv = sampleHGivenV(vh._2)
@@ -136,13 +135,13 @@ class GibbsSampler(rbm:RBM) {
   }
 
   def sampleHGivenV(v0Sample: Array[Int]) = {
-    val mean = Range(0, numHidden).map { i => rbm.propagateUp(v0Sample, W(i), hBias(i)) }.toArray
+    val mean = Range(0, numHidden).map { i => rbm.propagateUp(v0Sample, i) }.toArray
 
     (mean, sample(mean, rng))
   }
 
   def sampleVGivenH(h0Sample: Array[Int]): (Array[Double], Array[Int]) = {
-    val mean = Range(0, numVisible).map { i => rbm.propagateDown(h0Sample, i, vBias(i)) }.toArray
+    val mean = Range(0, numVisible).map { i => rbm.propagateDown(h0Sample, i) }.toArray
 
     (mean, sample(mean, rng))
   }
