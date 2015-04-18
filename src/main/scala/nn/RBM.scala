@@ -87,63 +87,84 @@ case class ContrastiveDivergenceTrainer(iterations:Int, learningRate:Double, k:I
     val numHidden = rbm.numHidden
     val numVisible = rbm.numVisible
 
-    var nv_means: Array[Double] = new Array[Double](rbm.numVisible)
-    var nv_samples: Array[Int] = new Array[Int](rbm.numVisible)
-    var nh_means: Array[Double] = new Array[Double](rbm.numHidden)
-    var nh_samples: Array[Int] = new Array[Int](rbm.numHidden)
+    var vhMean: Array[Double] = new Array[Double](rbm.numVisible)
+    var vhSample: Array[Int] = new Array[Int](rbm.numVisible)
+    var hvMean: Array[Double] = new Array[Double](rbm.numHidden)
+    var hvSample: Array[Int] = new Array[Int](rbm.numHidden)
 
     val gibbs = new GibbsSampler(rbm)
 
     /* CD-k */
-    val (ph_mean, ph_sample) = gibbs.sampleHGivenV(input)
+    val ph = gibbs.sampleHGivenV(input)
+
+    var g: GibbsHVHSample = GibbsHVHSample(vhMean, vhSample, hvMean, hvSample)
 
     0.until(k).foreach { step =>
-      val sample = if(step == 0) ph_sample else nh_samples
-      val g = gibbs.sampleGibbsHVH(sample, nv_means, nv_samples)
+      val sample = if(step == 0) ph.sample else hvSample
 
-      nv_means = g._1
-      nv_samples = g._2
-      nh_means = g._3
-      nh_samples = g._4
+      g = gibbs.sampleGibbsHVH(sample, vhMean, vhSample)
+
+      vhMean = g.vhMean
+      vhSample = g.vhSample
+      hvSample = g.hvSample
     }
+
+    hvMean = g.hvMean
 
     // Update weights and bias
     Range(0, numHidden).foreach { i =>
       Range(0, numVisible).foreach { j =>
-        rbm.W(i)(j) += lr * (ph_mean(i) * input(j) - nh_means(i) * nv_samples(j)) / rbm.N
+        rbm.W(i)(j) += lr * (ph.mean(i) * input(j) - hvMean(i) * vhSample(j)) / rbm.N
       }
 
-      rbm.hBias(i) += lr * (ph_sample(i) - nh_means(i)) / rbm.N
+      rbm.hBias(i) += lr * (ph.sample(i) - hvMean(i)) / rbm.N
     }
 
     Range(0, numVisible).foreach { i =>
-      rbm.vBias(i) += lr * (input(i) - nv_samples(i)) / rbm.N
+      rbm.vBias(i) += lr * (input(i) - vhSample(i)) / rbm.N
     }
   }
 }
+
+trait GibbsHVMStep {
+  def vhMean:Array[Double]
+
+  def vhSample:Array[Int]
+
+  def hvSample:Array[Int]
+}
+
+object GibbsHVHSample {
+  def apply(vh:GibbsSample, hv:GibbsSample): GibbsHVHSample = {
+    GibbsHVHSample(vh.mean, vh.sample, hv.mean, hv.sample)
+  }
+}
+
+case class GibbsHVHSample(vhMean:Array[Double], vhSample:Array[Int], hvMean:Array[Double], hvSample:Array[Int]) extends GibbsHVMStep
+
+case class GibbsSample(mean:Array[Double], sample:Array[Int])
 
 class GibbsSampler(rbm:RBM) {
   val rng = rbm.rng
   val numHidden = rbm.numHidden
   val numVisible = rbm.numVisible
 
-  def sampleGibbsHVH(h0Sample: Array[Int], nvMeans: Array[Double], nvSamples: Array[Int]) = {
+  def sampleGibbsHVH(h0Sample: Array[Int], nvMeans: Array[Double], nvSamples: Array[Int]): GibbsHVHSample = {
     val vh = sampleVGivenH(h0Sample)
-    val hv = sampleHGivenV(vh._2)
 
-    (vh._1, vh._2, hv._1, hv._2)
+    GibbsHVHSample(vh, sampleHGivenV(vh.sample))
   }
 
-  def sampleHGivenV(v0Sample: Array[Int]) = {
+  def sampleHGivenV(v0Sample: Array[Int]): GibbsSample = {
     val mean = Range(0, numHidden).map { i => rbm.propagateUp(v0Sample, i) }.toArray
 
-    (mean, sample(mean, rng))
+    GibbsSample(mean, sample(mean, rng))
   }
 
-  def sampleVGivenH(h0Sample: Array[Int]): (Array[Double], Array[Int]) = {
+  def sampleVGivenH(h0Sample: Array[Int]): GibbsSample = {
     val mean = Range(0, numVisible).map { i => rbm.propagateDown(h0Sample, i) }.toArray
 
-    (mean, sample(mean, rng))
+    GibbsSample(mean, sample(mean, rng))
   }
 
   private def sample(m:Array[Double], rng:Random) = {
