@@ -31,24 +31,24 @@ class RBMTest extends FreeSpec with Matchers {
       iterations = 1000,
       learningRate = 0.1,
       k = 2
-    ).train(trainSet)
+    ).train(MatBuilder(3, 3, trainSet))
 
     rbm.reconstructM(testSetMat) should equal(
       Array(
-        Array(0.003329569358668085, 0.2951388824444748, 0.9978182978208314),
-        Array(0.007276932788137207, 0.31074279541024996, 0.9939388505529718),
-        Array(0.0034921383069850156, 0.2960706903484258, 0.9976774927884484)
+        Array(0.012769545530355501, 0.3116374332230691, 0.9922074530975166),
+        Array(0.01993776921249075, 0.32297561926066903, 0.9858651678750088),
+        Array(0.013241975293386256, 0.3125494257189097, 0.9918196669522381)
       )
     )
 
     rbm.reconstructM(testSetMat) should equal(rbm.reconstructM(testSetMat))
 
-    rbm.propagateDown(Array(1, 0), 0) should equal(.010427013567532374)
-    rbm.propagateDown(Array(1, 0), 1) should equal(.3172730557439495)
-    rbm.propagateDown(Array(1, 0), 2) should equal(.9899104140658883)
+    rbm.propagateDown(Array(1, 0), 0) should equal(0.030049720410530306)
+    rbm.propagateDown(Array(1, 0), 1) should equal(0.3327355092942503)
+    rbm.propagateDown(Array(1, 0), 2) should equal(0.9750073350989872)
 
     rbm.propagateDownM(new DoubleMatrix(2, 1, 1, 0)) should equal(
-      new DoubleMatrix(3, 1, 0.010427013567532372, 0.3172730557439495, 0.9899104140658883)
+      new DoubleMatrix(3, 1, 0.030049720410530306, 0.3327355092942503, 0.9750073350989872)
     )
   }
 }

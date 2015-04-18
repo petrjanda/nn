@@ -1,6 +1,6 @@
 package nn.trainers.gibbs
 
-case class GibbsHVHSample(vhMean:Array[Double], vhSample:Array[Int], hvMean:Array[Double], hvSample:Array[Int])
+case class GibbsHVHSample(vhMean:Array[Double], vhSample:Array[Double], hvMean:Array[Double], hvSample:Array[Double])
 
 object GibbsHVHSample {
   def apply(vh:GibbsSample, hv:GibbsSample): GibbsHVHSample = {

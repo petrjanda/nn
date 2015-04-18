@@ -37,8 +37,6 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
   }
 
   def propagateDownM(v: DoubleMatrix): DoubleMatrix = {
-    println(v.rows, v.columns)
-    println(wmat.rows, wmat.columns)
     Logistic(wmat.mmul(v).addColumnVector(vbmat))
   }
 
@@ -57,7 +55,7 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
   }
 
   @deprecated
-  def propagateDown(h: Array[Int], i: Int): Double = {
+  def propagateDown(h: Array[Double], i: Int): Double = {
     val b = vBias(i)
     Fn.sigmoid(
       Range(0, numHidden).toArray.foldLeft(0.0) { (t, j) => t + W(j)(i) * h(j) } + b
@@ -65,7 +63,7 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
   }
 
   @deprecated
-  def propagateUp(v: Array[Int], i: Int): Double = {
+  def propagateUp(v: Array[Double], i: Int): Double = {
     val w = W(i)
     val b = hBias(i)
 
@@ -75,7 +73,7 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
   }
 
   @deprecated
-  def reconstruct(v: Array[Array[Int]]): Array[Array[Double]] = {
+  def reconstruct(v: Array[Array[Double]]): Array[Array[Double]] = {
     v.map { v =>
       val h = Range(0, numHidden).toArray.map { i =>
         propagateUp(v, i)
@@ -99,7 +97,7 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
 object Fn {
   def uniform(min: Double, max: Double, rng:Random): Double = rng.nextDouble() * (max - min) + min
 
-  def binomial(n: Int, p: Double, rng:Random): Int = {
+  def binomial(n: Int, p: Double, rng:Random): Double = {
     if(p < 0 || p > 1) return 0
 
     var c: Int = 0
@@ -111,7 +109,7 @@ object Fn {
       if(r < p) c += 1
     }
 
-    c
+    c.toDouble
   }
 
   def sigmoid(x: Double): Double = 1.0 / (1.0 + math.pow(math.E, -x))
