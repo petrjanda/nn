@@ -1,5 +1,6 @@
 package nn.trainers
 
+import nn.trainers.gibbs.{GibbsHVHSample, GibbsSample, GibbsSampler}
 import nn.{Fn, RBM}
 
 import scala.util.Random
@@ -53,39 +54,8 @@ case class ContrastiveDivergenceTrainer(nn:RBM, iterations:Int, learningRate:Dou
 }
 
 
-object GibbsHVHSample {
-  def apply(vh:GibbsSample, hv:GibbsSample): GibbsHVHSample = {
-    GibbsHVHSample(vh.mean, vh.sample, hv.mean, hv.sample)
-  }
-}
 
-case class GibbsHVHSample(vhMean:Array[Double], vhSample:Array[Int], hvMean:Array[Double], hvSample:Array[Int])
 
-case class GibbsSample(mean:Array[Double], sample:Array[Int])
 
-class GibbsSampler(rbm:RBM)(implicit rng:Random) {
-  val numHidden = rbm.numHidden
-  val numVisible = rbm.numVisible
 
-  def sampleGibbsHVH(h0Sample: Array[Int], nvMeans: Array[Double], nvSamples: Array[Int]): GibbsHVHSample = {
-    val vh = sampleVGivenH(h0Sample)
 
-    GibbsHVHSample(vh, sampleHGivenV(vh.sample))
-  }
-
-  def sampleHGivenV(v0Sample: Array[Int]): GibbsSample = {
-    val mean = Range(0, numHidden).map { i => rbm.propagateUp(v0Sample, i) }.toArray
-
-    GibbsSample(mean, sample(mean, rng))
-  }
-
-  def sampleVGivenH(h0Sample: Array[Int]): GibbsSample = {
-    val mean = Range(0, numVisible).map { i => rbm.propagateDown(h0Sample, i) }.toArray
-
-    GibbsSample(mean, sample(mean, rng))
-  }
-
-  private def sample(m:Array[Double], rng:Random) = {
-    m.map { s => Fn.binomial(1, s, rng) }
-  }
-}
