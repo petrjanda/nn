@@ -7,7 +7,7 @@ import scala.util.Random
 
 class RBMTest extends FreeSpec with Matchers {
   "RBM" - {
-    val rng: Random = new Random(1234)
+    implicit val rng: Random = new Random(1234)
 
     val trainSet: Array[Array[Int]] = Array(
       Array(0, 0, 1),
@@ -20,13 +20,14 @@ class RBMTest extends FreeSpec with Matchers {
       Array(0, 1, 1)
     )
 
-    val rbm: RBM = new RBM(2, 3, 1, new Random(1234))
+    val rbm: RBM = new RBM(3, 1)
 
     ContrastiveDivergenceTrainer(
+      nn = rbm,
       iterations = 1000,
       learningRate = 0.1,
       k = 2
-    ).train(rbm, trainSet)
+    ).train(trainSet)
 
     rbm.reconstruct(testSet) should equal(
       Array(

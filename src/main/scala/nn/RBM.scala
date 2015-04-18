@@ -2,8 +2,7 @@ package nn
 
 import scala.util.Random
 
-class RBM(val N: Int, val numVisible: Int, val numHidden: Int, var rng: Random) {
-
+class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
   val a: Double = 1 / numVisible
   var W: Array[Array[Double]] = Array.ofDim[Double](numHidden, numVisible)
   var hBias: Array[Double] = Array.fill(numHidden) { 0.0 }
