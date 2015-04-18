@@ -46,13 +46,18 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
     val h = propagateUpM(dataSet).columnsAsList()
 
     h.map { col =>
-      val layer = Layer(numHidden, vBias, W, col.toArray)
+      val layer = Layer(numHidden, vbmat, wmat, MatBuilder(numHidden, col.toArray))
 
-      Range(0, numVisible).toArray.map {
-        layer.activationOutput(_)
-      }
+      layer.activationOutput.toArray
     }.toArray
   }
+
+  case class Layer(n_hidden: Int, vbias: DoubleMatrix, W: DoubleMatrix, h: DoubleMatrix) {
+    def activationOutput: DoubleMatrix =
+      Logistic(W.mmul(h.transpose).addColumnVector(vbias))
+  }
+
+
 
   @deprecated
   def propagateDown(h: Array[Double], i: Int): Double = {
@@ -79,17 +84,9 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
         propagateUp(v, i)
       }
 
-      val layer = Layer(numHidden, vBias, W, h)
+      val layer = Layer(numHidden, vbmat, wmat, MatBuilder(numHidden, h))
 
-      Range(0, numVisible).toArray.map { layer.activationOutput(_) }
-    }
-  }
-
-  case class Layer(n_hidden: Int, vbias:Array[Double], W: Array[Array[Double]], h: Array[Double]) {
-    def activationOutput(i: Int) = {
-      Fn.sigmoid(
-        0.until(n_hidden).foldLeft(0.0) { (t, j) => t + W(j)(i) * h(j) } + vbias(i)
-      )
+      layer.activationOutput.toArray
     }
   }
 }
