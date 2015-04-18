@@ -7,12 +7,16 @@ import org.jblas.DoubleMatrix
 import scala.util.Random
 
 class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
-  val a: Double = 1 / numVisible
+  @deprecated
   var W: Array[Array[Double]] = Array.ofDim[Double](numHidden, numVisible)
+
+  @deprecated
   var hBias: Array[Double] = Array.fill(numHidden) { 0.0 }
+
+  @deprecated
   var vBias: Array[Double] = Array.fill(numVisible) { 0.0 }
 
-
+  val a: Double = 1 / numVisible
   Range(0, numHidden).foreach { i =>
     Range(0, numVisible).foreach { j =>
       W(i)(j) = Fn.uniform(-a, a, rng)
@@ -31,15 +35,13 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
     Logistic(wmat.mmul(v).addColumnVector(vbmat))
   }
 
-  def reconstructM(dataSet:DoubleMatrix): Array[Array[Double]] = {
+  def reconstructM(dataSet:DoubleMatrix): Array[DoubleMatrix] = {
     import scala.collection.JavaConversions._
 
-    val h = propagateUpM(dataSet).columnsAsList()
+    val h = propagateUpM(dataSet).transpose.rowsAsList()
 
     h.map { col =>
-      val layer = Layer(vbmat, wmat, col.transpose)
-
-      layer.activationOutput.toArray
+      Layer(vbmat, wmat, col).activationOutput
     }.toArray
   }
 
@@ -100,5 +102,6 @@ object Fn {
     c.toDouble
   }
 
+  @deprecated
   def sigmoid(x: Double): Double = 1.0 / (1.0 + math.pow(math.E, -x))
 }

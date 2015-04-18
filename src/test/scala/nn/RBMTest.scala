@@ -11,13 +11,13 @@ class RBMTest extends FreeSpec with Matchers {
   "RBM" - {
     implicit val rng: Random = new Random(1234)
 
-    val trainSet: Array[Array[Int]] = Array(
+    val trainSet: Array[Array[Double]] = Array(
       Array(0, 0, 1),
       Array(0, 0, 1),
       Array(0, 1, 1)
     )
 
-    val testSet = Array(
+    val testSet: Array[Array[Double]] = Array(
       Array(0, 0, 1),
       Array(1, 0, 1),
       Array(0, 1, 1)
@@ -36,13 +36,13 @@ class RBMTest extends FreeSpec with Matchers {
 
     rbm.reconstructM(testSetMat) should equal(
       Array(
-        Array(0.012769545530355501, 0.3116374332230691, 0.9922074530975166),
-        Array(0.01993776921249075, 0.32297561926066903, 0.9858651678750088),
-        Array(0.013241975293386256, 0.3125494257189097, 0.9918196669522381)
+        new DoubleMatrix(3, 1, 0.012769545530355501, 0.3116374332230691, 0.9922074530975166),
+        new DoubleMatrix(3, 1, 0.01993776921249075, 0.32297561926066903, 0.9858651678750088),
+        new DoubleMatrix(3, 1, 0.013241975293386256, 0.3125494257189097, 0.9918196669522381)
       )
     )
 
-    rbm.reconstructM(testSetMat) should equal(rbm.reconstructM(testSetMat))
+    rbm.reconstruct(testSet) should equal(rbm.reconstructM(testSetMat).map(_.toArray))
 
     rbm.propagateDown(Array(1, 0), 0) should equal(0.030049720410530306)
     rbm.propagateDown(Array(1, 0), 1) should equal(0.3327355092942503)
