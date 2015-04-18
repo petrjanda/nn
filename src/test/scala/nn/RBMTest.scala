@@ -1,5 +1,6 @@
 package nn
 
+import nn.trainers.ContrastiveDivergenceTrainer
 import org.scalatest.{FreeSpec, Matchers}
 
 import scala.util.Random
