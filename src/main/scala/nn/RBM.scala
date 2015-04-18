@@ -2,40 +2,40 @@ package nn
 
 import scala.util.Random
 
-class RBM(val N: Int, val n_visible: Int, val n_hidden: Int, var rng: Random) {
+class RBM(val N: Int, val numVisible: Int, val numHidden: Int, var rng: Random) {
 
-  val a: Double = 1 / n_visible
-  var W: Array[Array[Double]] = Array.ofDim[Double](n_hidden, n_visible)
-  var hbias: Array[Double] = Array.fill(n_hidden) { 0.0 }
-  var vbias: Array[Double] = Array.fill(n_visible) { 0.0 }
+  val a: Double = 1 / numVisible
+  var W: Array[Array[Double]] = Array.ofDim[Double](numHidden, numVisible)
+  var hBias: Array[Double] = Array.fill(numHidden) { 0.0 }
+  var vBias: Array[Double] = Array.fill(numVisible) { 0.0 }
 
-  Range(0, n_hidden).foreach { i => 
-    Range(0, n_visible).foreach { j =>
+  Range(0, numHidden).foreach { i =>
+    Range(0, numVisible).foreach { j =>
       W(i)(j) = Fn.uniform(-a, a, rng)
     }
   }
 
   def propagateUp(v: Array[Int], w: Array[Double], b: Double): Double = {
     Fn.sigmoid(
-      Range(0, n_visible).toArray.foldLeft(0.0) { (t, j) => t + w(j) * v(j) } + b
+      Range(0, numVisible).toArray.foldLeft(0.0) { (t, j) => t + w(j) * v(j) } + b
     )
   }
 
   def propagateDown(h: Array[Int], i: Int, b: Double): Double = {
     Fn.sigmoid(
-      Range(0, n_hidden).toArray.foldLeft(0.0) { (t, j) => t + W(j)(i) * h(j) } + b
+      Range(0, numHidden).toArray.foldLeft(0.0) { (t, j) => t + W(j)(i) * h(j) } + b
     )
   }
 
   def reconstruct(v: Array[Array[Int]]): Array[Array[Double]] = {
     v.map { v =>
-      val h = Range(0, n_hidden).toArray.map { i =>
-        propagateUp(v, W(i), hbias(i))
+      val h = Range(0, numHidden).toArray.map { i =>
+        propagateUp(v, W(i), hBias(i))
       }
 
-      val layer = Layer(n_hidden, vbias, W, h)
+      val layer = Layer(numHidden, vBias, W, h)
 
-      Range(0, n_visible).toArray.map { layer.activationOutput(_) }
+      Range(0, numVisible).toArray.map { layer.activationOutput(_) }
     }
   }
 
@@ -75,50 +75,52 @@ case class ContrastiveDivergenceTrainer(iterations:Int, learningRate:Double, k:I
   def train(rbm:RBM, dataSet:Array[Array[Int]]) = {
     0.until(iterations).foreach { _ =>
       dataSet.foreach { item =>
-        contrastive_divergence(rbm, item, learningRate, k)
+        contrastiveDivergence(rbm, item, learningRate, k)
       }
     }
   }
 
-  def contrastive_divergence(rbm:RBM, input: Array[Int], lr: Double, k: Int) {
-    val nv_means: Array[Double] = new Array[Double](rbm.n_visible)
-    val nv_samples: Array[Int] = new Array[Int](rbm.n_visible)
-    var nh_means: Array[Double] = new Array[Double](rbm.n_hidden)
-    var nh_samples: Array[Int] = new Array[Int](rbm.n_hidden)
+  def contrastiveDivergence(rbm:RBM, input: Array[Int], lr: Double, k: Int) {
+    val numHidden = rbm.numHidden
+    val numVisible = rbm.numVisible
+
+    val nv_means: Array[Double] = new Array[Double](rbm.numVisible)
+    val nv_samples: Array[Int] = new Array[Int](rbm.numVisible)
+    var nh_means: Array[Double] = new Array[Double](rbm.numHidden)
+    var nh_samples: Array[Int] = new Array[Int](rbm.numHidden)
 
     /* CD-k */
     val (ph_mean, ph_sample) = sampleHGivenV(rbm, input)
 
     0.until(k).foreach { step =>
       val sample = if(step == 0) ph_sample else nh_samples
-
       val gibbs = gibbs_hvh(rbm, sample, nv_means, nv_samples)
 
       nh_means = gibbs._1
       nh_samples = gibbs._2
     }
 
-    0.until(rbm.n_hidden).foreach { i =>
-      0.until(rbm.n_visible).foreach { j =>
+    // Update weights and bias
+    Range(0, numHidden).foreach { i =>
+      Range(0, numVisible).foreach { j =>
         rbm.W(i)(j) += lr * (ph_mean(i) * input(j) - nh_means(i) * nv_samples(j)) / rbm.N
       }
 
-      rbm.hbias(i) += lr * (ph_sample(i) - nh_means(i)) / rbm.N
+      rbm.hBias(i) += lr * (ph_sample(i) - nh_means(i)) / rbm.N
     }
 
-
-    0.until(rbm.n_visible).foreach { i =>
-      rbm.vbias(i) += lr * (input(i) - nv_samples(i)) / rbm.N
+    Range(0, numVisible).foreach { i =>
+      rbm.vBias(i) += lr * (input(i) - nv_samples(i)) / rbm.N
     }
   }
 
   def gibbs_hvh(rbm:RBM, h0_sample: Array[Int], nv_means: Array[Double], nv_samples: Array[Int]) = {
-    sampleVGivenH(rbm:RBM, h0_sample, nv_means, nv_samples)
-    sampleHGivenV(rbm:RBM, nv_samples)
+    sampleVGivenH(rbm, h0_sample, nv_means, nv_samples)
+    sampleHGivenV(rbm, nv_samples)
   }
 
   def sampleHGivenV(rbm:RBM, v0_sample: Array[Int]) = {
-    val mean = 0.until(rbm.n_hidden).map { i => rbm.propagateUp(v0_sample, rbm.W(i), rbm.hbias(i)) }.toArray
+    val mean = 0.until(rbm.numHidden).map { i => rbm.propagateUp(v0_sample, rbm.W(i), rbm.hBias(i)) }.toArray
     val sample = mean.map { s => Fn.binomial(1, s, rbm.rng) }
 
     (mean, sample)
@@ -126,8 +128,8 @@ case class ContrastiveDivergenceTrainer(iterations:Int, learningRate:Double, k:I
 
   def sampleVGivenH(rbm:RBM, h0_sample: Array[Int], mean: Array[Double], sample: Array[Int]) {
     var i: Int = 0
-    for(i <- 0 until rbm.n_visible) {
-      mean(i) = rbm.propagateDown(h0_sample, i, rbm.vbias(i))
+    for(i <- 0 until rbm.numVisible) {
+      mean(i) = rbm.propagateDown(h0_sample, i, rbm.vBias(i))
       sample(i) = Fn.binomial(1, mean(i), rbm.rng)
     }
   }
