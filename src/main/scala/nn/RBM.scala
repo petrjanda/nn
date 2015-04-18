@@ -1,26 +1,17 @@
 package nn
 
 import nn.fn.act.Logistic
+import nn.utils.MatBuilder
 import org.jblas.DoubleMatrix
 
 import scala.util.Random
-
-object MatBuilder {
-  def apply(rows:Int, columns:Int, a:Array[Array[Double]]) =
-    new DoubleMatrix(columns, rows, a.flatten:_*)
-
-  def apply(rows:Int, columns:Int, a:Array[Array[Int]]) =
-    new DoubleMatrix(columns, rows, a.flatten.map(_.toDouble):_*)
-
-  def apply(columns:Int, a:Array[Double]) =
-    new DoubleMatrix(1, columns, a:_*)
-}
 
 class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
   val a: Double = 1 / numVisible
   var W: Array[Array[Double]] = Array.ofDim[Double](numHidden, numVisible)
   var hBias: Array[Double] = Array.fill(numHidden) { 0.0 }
   var vBias: Array[Double] = Array.fill(numVisible) { 0.0 }
+
 
   Range(0, numHidden).foreach { i =>
     Range(0, numVisible).foreach { j =>
@@ -46,13 +37,13 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
     val h = propagateUpM(dataSet).columnsAsList()
 
     h.map { col =>
-      val layer = Layer(numHidden, vbmat, wmat, MatBuilder(numHidden, col.toArray))
+      val layer = Layer(vbmat, wmat, col.transpose)
 
       layer.activationOutput.toArray
     }.toArray
   }
 
-  case class Layer(n_hidden: Int, vbias: DoubleMatrix, W: DoubleMatrix, h: DoubleMatrix) {
+  case class Layer(vbias: DoubleMatrix, W: DoubleMatrix, h: DoubleMatrix) {
     def activationOutput: DoubleMatrix =
       Logistic(W.mmul(h.transpose).addColumnVector(vbias))
   }
@@ -84,7 +75,7 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
         propagateUp(v, i)
       }
 
-      val layer = Layer(numHidden, vbmat, wmat, MatBuilder(numHidden, h))
+      val layer = Layer(vbmat, wmat, MatBuilder(numHidden, h))
 
       layer.activationOutput.toArray
     }

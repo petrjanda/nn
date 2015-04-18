@@ -1,5 +1,6 @@
 package nn
 
+import nn.utils.MatBuilder
 import org.jblas.DoubleMatrix
 import org.scalatest.{Matchers, FreeSpec}
 
