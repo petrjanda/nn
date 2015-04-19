@@ -6,44 +6,34 @@ import org.jblas.DoubleMatrix
 
 import scala.util.Random
 
-class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) extends Serializable {
-  @deprecated
-  val W: Array[Array[Double]] = Array.ofDim[Double](numHidden, numVisible)
+object RBM {
+  def apply(numVisible: Int, numHidden: Int)(implicit rng: Random) = {
+    val W = Fn.uniformMatrix(numVisible, numHidden, 1 / numVisible)
+    val hBias = new DoubleMatrix(1, numHidden).fill(0.0)
+    val vBias = new DoubleMatrix(1, numVisible).fill(0.0)
 
-  @deprecated
-  var hBias: Array[Double] = Array.fill(numHidden) { 0.0 }
-
-  @deprecated
-  var vBias: Array[Double] = Array.fill(numVisible) { 0.0 }
-
-  val a: Double = 1 / numVisible
-  Range(0, numHidden).foreach { i =>
-    Range(0, numVisible).foreach { j =>
-      W(i)(j) = Fn.uniform(-a, a, rng)
-    }
+    new RBM(numVisible, numHidden, W, hBias, vBias)
   }
+}
 
-  var wmat = MatBuilder(numHidden, numVisible, W)
-  var hbmat = MatBuilder(numHidden, hBias)
-  var vbmat = MatBuilder(numVisible, vBias)
-
+class RBM(val numVisible: Int, val numHidden: Int, W:DoubleMatrix, hBias:DoubleMatrix, vBias:DoubleMatrix)(implicit rng: Random) extends Serializable {
   def propagateUpM(v: DoubleMatrix): DoubleMatrix =
-    Logistic(wmat.transpose.mmul(v).addColumnVector(hbmat))
+    Logistic(W.transpose.mmul(v).addColumnVector(hBias))
 
   def propagateDownM(v: DoubleMatrix): DoubleMatrix =
-    Logistic(wmat.mmul(v).addColumnVector(vbmat))
+    Logistic(W.mmul(v).addColumnVector(vBias))
 
   def reconstructM(dataSet:DoubleMatrix): DoubleMatrix =
     propagateDownM(propagateUpM(dataSet))
 
-  def updateWeights(diff:(DoubleMatrix, DoubleMatrix, DoubleMatrix)) = {
-    wmat = wmat.add(diff._1)
-    hbmat = hbmat.add(diff._2)
-    vbmat = vbmat.add(diff._3)
+  def updateWeights(diff:(DoubleMatrix, DoubleMatrix, DoubleMatrix)):RBM = {
+    new RBM(numVisible, numHidden, W.add(diff._1), hBias.add(diff._2), vBias.add(diff._3))
   }
 }
 
 object Fn {
+  def uniformMatrix(r:Int, c:Int, a:Double)(implicit rng:Random) = new DoubleMatrix(r, c, Range(0, r* c).map(_ => Fn.uniform(-a, a, rng)):_*)
+
   def uniform(min: Double, max: Double, rng:Random): Double = rng.nextDouble() * (max - min) + min
 
   def binomial(n: Int, p: Double, rng:Random): Double = {
@@ -60,7 +50,4 @@ object Fn {
 
     c.toDouble
   }
-
-  @deprecated
-  def sigmoid(x: Double): Double = 1.0 / (1.0 + math.pow(math.E, -x))
 }

@@ -26,16 +26,16 @@ class RBMTest extends FreeSpec with Matchers {
 
     val testSetMat = MatBuilder(4, 3, testSet)
 
-    val rbm: RBM = new RBM(3, 2)
-
-    ContrastiveDivergenceTrainer(
-      nn = rbm,
+    val trainer = ContrastiveDivergenceTrainer(
+      nn = RBM(3, 2),
       iterations = 1000,
       miniBatchSize = 1000,
       numParallel = 1,
       learningRate = 0.1,
       k = 2
-    ).train(MatBuilder(3, 3, trainSet))
+    )
+
+    val rbm = trainer.train(MatBuilder(3, 3, trainSet))
 
     rbm.reconstructM(testSetMat) should equal(
       new DoubleMatrix(3, 4,

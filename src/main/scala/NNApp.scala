@@ -56,11 +56,9 @@ object NNApp extends App {
 
           val trainSet = DemographicDataSet("data/salary/adult.data")
 
-          val nn = new RBM(trainSet.numInputs, 5)
-          
-          ContrastiveDivergenceTrainer(
-            nn = nn,
-            iterations = 1000,
+          val nn = ContrastiveDivergenceTrainer(
+            nn = RBM(trainSet.numInputs, 5),
+            iterations = 200,
             miniBatchSize = 1000,
             numParallel = 1,
             learningRate = 0.15,
@@ -69,7 +67,7 @@ object NNApp extends App {
 
           Repository.save(nn, "data/salary/net/rbm.o")
 
-          writeToFile("weights.txt", printMat(nn.wmat))
+//          writeToFile("weights.txt", printMat(nn.W))
         }
 
         case "run" => {

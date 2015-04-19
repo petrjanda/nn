@@ -7,10 +7,10 @@ import org.jblas.DoubleMatrix
 
 import scala.util.Random
 
-case class ContrastiveDivergenceTrainer(nn:RBM, iterations:Int, miniBatchSize:Int, numParallel:Int, learningRate:Double, k:Int)(implicit rng:Random) {
+case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, miniBatchSize:Int, numParallel:Int, learningRate:Double, k:Int)(implicit rng:Random) {
   import scala.collection.JavaConversions._
 
-  def train(dataSet:DataSet) = {
+  def train(dataSet:DataSet):RBM = {
     dataSet.miniBatches(miniBatchSize).grouped(numParallel).take(iterations).zipWithIndex.foreach {
       case (batches, iteration) =>
         val batch = batches(0)
@@ -18,19 +18,25 @@ case class ContrastiveDivergenceTrainer(nn:RBM, iterations:Int, miniBatchSize:In
         println("Iteration:%5d".format(iteration + 1))
 
         batch.inputs.columnsAsList.toList.foreach { item =>
-          contrastiveDivergence(batch.numExamples, item)
+          nn = nn.updateWeights(
+            contrastiveDivergence(batch.numExamples, item)
+          )
         }
     }
+
+    nn
   }
 
-  def train(inputs:DoubleMatrix) = {
+  def train(inputs:DoubleMatrix):RBM = {
     0.until(iterations).foreach { _ =>
       inputs.columnsAsList.toList.foreach { item =>
-        nn.updateWeights(
+        nn = nn.updateWeights(
           contrastiveDivergence(inputs.columns, item)
         )
       }
     }
+
+    nn
   }
 
   def contrastiveDivergence(inputLength:Int, input: DoubleMatrix) = {
