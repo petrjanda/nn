@@ -7,31 +7,39 @@ import org.jblas.DoubleMatrix
 
 import scala.util.Random
 
-case class ContrastiveDivergenceTrainer(nn:RBM, iterations:Int, learningRate:Double, k:Int)(implicit rng:Random) {
+case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, miniBatchSize:Int, numParallel:Int, learningRate:Double, k:Int)(implicit rng:Random) {
   import scala.collection.JavaConversions._
 
-  def train(dataSet:DataSet) = {
-    dataSet.miniBatches(1000).grouped(1).take(iterations).zipWithIndex.foreach {
+  def train(dataSet:DataSet):RBM = {
+    dataSet.miniBatches(miniBatchSize).grouped(numParallel).take(iterations).zipWithIndex.foreach {
       case (batches, iteration) =>
         val batch = batches(0)
 
         println("Iteration:%5d".format(iteration + 1))
 
         batch.inputs.columnsAsList.toList.foreach { item =>
-          contrastiveDivergence(batch.numExamples, item)
+          nn = nn.updateWeights(
+            contrastiveDivergence(batch.numExamples, item)
+          )
         }
     }
+
+    nn
   }
 
-  def train(inputs:DoubleMatrix) = {
+  def train(inputs:DoubleMatrix):RBM = {
     0.until(iterations).foreach { _ =>
       inputs.columnsAsList.toList.foreach { item =>
-        contrastiveDivergence(inputs.columns, item)
+        nn = nn.updateWeights(
+          contrastiveDivergence(inputs.columns, item)
+        )
       }
     }
+
+    nn
   }
 
-  def contrastiveDivergence(inputLength:Int, input: DoubleMatrix) {
+  def contrastiveDivergence(inputLength:Int, input: DoubleMatrix) = {
     val gibbs = new GibbsSampler(nn)
     val numHidden = nn.numHidden
     val numVisible = nn.numVisible
@@ -49,28 +57,21 @@ case class ContrastiveDivergenceTrainer(nn:RBM, iterations:Int, learningRate:Dou
       gibbs.sampleGibbsHVH(old.hvSample)
     })
 
-    updateRbm(inputSample, input, g, inputLength)
+    calculateDiff(inputSample, input, g, inputLength)
   }
-  
-  def updateRbm(inputSample: GibbsSample, input: DoubleMatrix, g: GibbsHVHSample, inputLength: Int) = {
-    val numHidden = nn.numHidden
-    val numVisible = nn.numVisible
 
-    // Update weights and bias
-    Range(0, numHidden).foreach { i =>
-      Range(0, numVisible).foreach { j =>
-        nn.W(i)(j) += learningRate * (
-          inputSample.mean.data(i) * input.data(j) -
-            g.hvMean.data(i) * g.vhSample.data(j)
-          ) / inputLength
-      }
+  def calculateDiff(inputSample: GibbsSample, input: DoubleMatrix, g: GibbsHVHSample, inputLength: Int) = {
+    val weights = inputSample.mean
+      .mmul(input.transpose)
+      .sub(g.hvMean.mmul(g.vhSample.transpose))
+      .mul(learningRate / inputLength)
+      .transpose
 
-      nn.hBias(i) += learningRate * (inputSample.sample.data(i) - g.hvMean.data(i)) / inputLength
-    }
+    val hBias = inputSample.sample.sub(g.hvMean).mul(learningRate / inputLength)
 
-    Range(0, numVisible).foreach { i =>
-      nn.vBias(i) += learningRate * (input.data(i) - g.vhSample.data(i)) / inputLength
-    }
+    val vBias = input.sub(g.vhSample).mul(learningRate / inputLength)
+
+    (weights, hBias, vBias)
   }
 }
 
