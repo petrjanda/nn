@@ -45,15 +45,17 @@ case class ContrastiveDivergenceTrainer(nn:RBM, iterations:Int, learningRate:Dou
     // Update weights and bias
     Range(0, numHidden).foreach { i =>
       Range(0, numVisible).foreach { j =>
-        println(inputSample.mean)
-        nn.W(i)(j) += learningRate * (inputSample.mean.get(0, i) * input.get(0, j) - g.hvMean.get(0, i) * g.vhSample.get(0, j)) / inputLength
+        nn.W(i)(j) += learningRate * (
+          inputSample.mean.data(i) * input.data(j) -
+            g.hvMean.data(i) * g.vhSample.data(j)
+          ) / inputLength
       }
 
-      nn.hBias(i) += learningRate * (inputSample.sample.get(0, i) - g.hvMean.get(0, i)) / inputLength
+      nn.hBias(i) += learningRate * (inputSample.sample.data(i) - g.hvMean.data(i)) / inputLength
     }
 
     Range(0, numVisible).foreach { i =>
-      nn.vBias(i) += learningRate * (input.get(0, i) - g.vhSample.get(0, i)) / inputLength
+      nn.vBias(i) += learningRate * (input.data(i) - g.vhSample.data(i)) / inputLength
     }
   }
 }
