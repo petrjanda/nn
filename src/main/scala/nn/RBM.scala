@@ -16,7 +16,7 @@ object RBM {
   }
 }
 
-class RBM(val numVisible: Int, val numHidden: Int, W:DoubleMatrix, hBias:DoubleMatrix, vBias:DoubleMatrix)(implicit rng: Random) extends Serializable {
+class RBM(val numVisible: Int, val numHidden: Int, val W:DoubleMatrix, hBias:DoubleMatrix, vBias:DoubleMatrix)(implicit rng: Random) extends Serializable {
   def propagateUpM(v: DoubleMatrix): DoubleMatrix =
     Logistic(W.transpose.mmul(v).addColumnVector(hBias))
 

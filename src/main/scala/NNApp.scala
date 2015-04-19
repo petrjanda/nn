@@ -67,7 +67,7 @@ object NNApp extends App {
 
           Repository.save(nn, "data/salary/net/rbm.o")
 
-//          writeToFile("weights.txt", printMat(nn.W))
+          writeToFile("weights.txt", printMat(nn.W))
         }
 
         case "run" => {
