@@ -20,10 +20,11 @@ class RBMTest extends FreeSpec with Matchers {
     val testSet: Array[Array[Double]] = Array(
       Array(0, 0, 1),
       Array(1, 0, 1),
-      Array(0, 1, 1)
+      Array(1, 0, 1),
+      Array(1, 0, 1)
     )
 
-    val testSetMat = MatBuilder(3, 3, testSet)
+    val testSetMat = MatBuilder(4, 3, testSet)
 
     val rbm: RBM = new RBM(3, 2)
 
@@ -35,14 +36,17 @@ class RBMTest extends FreeSpec with Matchers {
     ).train(MatBuilder(3, 3, trainSet))
 
     rbm.reconstructM(testSetMat) should equal(
-      Array(
-        new DoubleMatrix(3, 1, 0.012769545530355501, 0.3116374332230691, 0.9922074530975166),
-        new DoubleMatrix(3, 1, 0.01993776921249075, 0.32297561926066903, 0.9858651678750088),
-        new DoubleMatrix(3, 1, 0.013241975293386256, 0.3125494257189097, 0.9918196669522381)
+      new DoubleMatrix(3, 4,
+        0.012769545530355501, 0.3116374332230691, 0.9922074530975166,
+        0.01993776921249075, 0.32297561926066903, 0.9858651678750088,
+        0.01993776921249075, 0.32297561926066903, 0.9858651678750088,
+        0.01993776921249075, 0.32297561926066903, 0.9858651678750088
       )
     )
 
-    rbm.reconstruct(testSet) should equal(rbm.reconstructM(testSetMat).map(_.toArray))
+    import scala.collection.JavaConversions._
+
+    rbm.reconstruct(testSet) should equal(rbm.reconstructM(testSetMat).columnsAsList.toList.map(_.toArray).toArray)
 
     rbm.propagateDown(Array(1, 0), 0) should equal(0.030049720410530306)
     rbm.propagateDown(Array(1, 0), 1) should equal(0.3327355092942503)

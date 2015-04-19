@@ -27,23 +27,14 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
   def hbmat = MatBuilder(numHidden, hBias)
   def vbmat = MatBuilder(numVisible, vBias)
 
-  def propagateUpM(v: DoubleMatrix): DoubleMatrix = {
+  def propagateUpM(v: DoubleMatrix): DoubleMatrix =
     Logistic(wmat.transpose.mmul(v).addColumnVector(hbmat))
-  }
 
-  def propagateDownM(v: DoubleMatrix): DoubleMatrix = {
+  def propagateDownM(v: DoubleMatrix): DoubleMatrix =
     Logistic(wmat.mmul(v).addColumnVector(vbmat))
-  }
 
-  def reconstructM(dataSet:DoubleMatrix): Array[DoubleMatrix] = {
-    import scala.collection.JavaConversions._
-
-    val h = propagateUpM(dataSet).transpose.rowsAsList()
-
-    h.map { col =>
-      Layer(vbmat, wmat, col).activationOutput
-    }.toArray
-  }
+  def reconstructM(dataSet:DoubleMatrix): DoubleMatrix =
+    Layer(vbmat, wmat, propagateUpM(dataSet).transpose).activationOutput
 
   case class Layer(vbias: DoubleMatrix, W: DoubleMatrix, h: DoubleMatrix) {
     def activationOutput: DoubleMatrix =
