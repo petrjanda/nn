@@ -36,8 +36,6 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
   def reconstructM(dataSet:DoubleMatrix): DoubleMatrix =
     Layer(vbmat, wmat, propagateUpM(dataSet).transpose).activationOutput
 
-
-
   case class Layer(vbias: DoubleMatrix, W: DoubleMatrix, h: DoubleMatrix) {
     def activationOutput: DoubleMatrix =
       Logistic(W.mmul(h.transpose).addColumnVector(vbias))

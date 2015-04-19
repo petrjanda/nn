@@ -24,8 +24,10 @@ case class ContrastiveDivergenceTrainer(nn:RBM, iterations:Int, learningRate:Dou
   }
 
   def train(inputs:DoubleMatrix) = {
-    inputs.columnsAsList.toList.foreach { item =>
-      contrastiveDivergence(inputs.columns, item)
+    0.until(iterations).foreach { _ =>
+      inputs.columnsAsList.toList.foreach { item =>
+        contrastiveDivergence(inputs.columns, item)
+      }
     }
   }
 
