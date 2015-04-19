@@ -1,5 +1,6 @@
 package nn.trainers
 
+import nn.ds.DataSet
 import nn.trainers.gibbs.{GibbsHVHSample, GibbsSample, GibbsSampler}
 import nn.{Fn, RBM}
 import org.jblas.DoubleMatrix
@@ -7,13 +8,18 @@ import org.jblas.DoubleMatrix
 import scala.util.Random
 
 case class ContrastiveDivergenceTrainer(nn:RBM, iterations:Int, learningRate:Double, k:Int)(implicit rng:Random) {
-  def train(dataSet:DoubleMatrix) = {
-    import scala.collection.JavaConversions._
+  import scala.collection.JavaConversions._
 
-    0.until(iterations).foreach { _ =>
-      dataSet.columnsAsList.toList.foreach { item =>
-        contrastiveDivergence(dataSet.length, item)
-      }
+  def train(dataSet:DataSet) = {
+    dataSet.miniBatches(1000).grouped(1).take(iterations).zipWithIndex.foreach {
+      case (batches, iteration) =>
+        val batch = batches(0)
+
+        println("Iteration:%5d".format(iteration + 1))
+
+        batch.inputs.columnsAsList.toList.foreach { item =>
+          contrastiveDivergence(batch.numExamples, item)
+        }
     }
   }
 
