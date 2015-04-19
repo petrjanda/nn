@@ -6,6 +6,9 @@ object MatBuilder {
   def apply(rows:Int, columns:Int, a:Array[Array[Double]]) =
     new DoubleMatrix(columns, rows, a.flatten:_*)
 
+  def apply(rows:Int, columns:Int, a:Array[Double]) =
+    new DoubleMatrix(columns, rows, a:_*)
+
   def apply(rows:Int, columns:Int, a:Array[Array[Int]]) =
     new DoubleMatrix(columns, rows, a.flatten.map(_.toDouble):_*)
 

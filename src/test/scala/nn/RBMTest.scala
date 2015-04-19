@@ -43,17 +43,5 @@ class RBMTest extends FreeSpec with Matchers {
         0.01993776921249075, 0.32297561926066903, 0.9858651678750088
       )
     )
-
-    import scala.collection.JavaConversions._
-
-    rbm.reconstruct(testSet) should equal(rbm.reconstructM(testSetMat).columnsAsList.toList.map(_.toArray).toArray)
-
-    rbm.propagateDown(Array(1, 0), 0) should equal(0.030049720410530306)
-    rbm.propagateDown(Array(1, 0), 1) should equal(0.3327355092942503)
-    rbm.propagateDown(Array(1, 0), 2) should equal(0.9750073350989872)
-
-    rbm.propagateDownM(new DoubleMatrix(2, 1, 1, 0)) should equal(
-      new DoubleMatrix(3, 1, 0.030049720410530306, 0.3327355092942503, 0.9750073350989872)
-    )
   }
 }

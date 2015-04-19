@@ -5,8 +5,11 @@ import nn.fn.act.{HyperbolicTangent, Logistic}
 import nn.fn.lrn.AnnealingRate
 import nn.fn.obj.CrossEntropyError
 import nn.fn.scr.BinaryClassificationScore
+import nn.trainers.ContrastiveDivergenceTrainer
 import nn.trainers.backprop.Trainer
 import org.jblas.MatrixFunctions._
+
+import scala.util.Random
 
 object NNApp extends App {
 
@@ -40,6 +43,14 @@ object NNApp extends App {
 //  println(nn.layers.head.weights.getRow(0))
 //  println(nn.layers.tail.head.weights)
 
+
+  implicit val rng = new Random(System.currentTimeMillis())
+  
+  val trainSet = DemographicDataSet("data/salary/adult.data")
+
+  val nn = new RBM(trainSet.numInputs, 10)
+
+  ContrastiveDivergenceTrainer(nn, 100, .1, 2).train(trainSet)
 
 
 }
