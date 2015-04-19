@@ -23,6 +23,12 @@ case class ContrastiveDivergenceTrainer(nn:RBM, iterations:Int, learningRate:Dou
     }
   }
 
+  def train(inputs:DoubleMatrix) = {
+    inputs.columnsAsList.toList.foreach { item =>
+      contrastiveDivergence(inputs.columns, item)
+    }
+  }
+
   def contrastiveDivergence(inputLength:Int, input: DoubleMatrix) {
     val gibbs = new GibbsSampler(nn)
     val numHidden = nn.numHidden

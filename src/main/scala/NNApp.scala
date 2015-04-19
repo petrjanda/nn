@@ -1,3 +1,5 @@
+import java.io.File
+
 import ds.salary.DemographicDataSet
 import nn._
 import nn.fn.WeightDecay
@@ -7,6 +9,8 @@ import nn.fn.obj.CrossEntropyError
 import nn.fn.scr.BinaryClassificationScore
 import nn.trainers.ContrastiveDivergenceTrainer
 import nn.trainers.backprop.Trainer
+import nn.utils.Repository
+import org.jblas.DoubleMatrix
 import org.jblas.MatrixFunctions._
 
 import scala.util.Random
@@ -45,15 +49,33 @@ object NNApp extends App {
 
 
   implicit val rng = new Random(System.currentTimeMillis())
-  
+
   val trainSet = DemographicDataSet("data/salary/adult.data")
 
-  val nn = new RBM(trainSet.numInputs, 10)
+  val nn = new RBM(trainSet.numInputs, 50)
+  ContrastiveDivergenceTrainer(nn, 1000, 0.15, 2).train(trainSet)
 
-  ContrastiveDivergenceTrainer(nn, 100, .1, 2).train(trainSet)
+  Repository.save(nn, "data/salary/net/rbm.o")
 
 
+  val nn2 = Repository.load[RBM]("data/salary/net/rbm.o")
+  val testSet = DemographicDataSet("data/salary/adult.test")
+
+  writeToFile("weights.txt", printMat(nn2.wmat))
+
+//  println(BinaryClassificationScore(.5).score(testSet.inputs, nn.reconstructM(testSet)))
+
+
+  def printMat(mat:DoubleMatrix) = {
+    mat.data.toList.map(i => (i * 10000).round / 10000.0).toString
+  }
+
+  def writeToFile(p: String, s: String): Unit = {
+    val pw = new java.io.PrintWriter(new File(p))
+    try pw.write(s) finally pw.close()
+  }
 }
+
 
 import scala.util.Random
 
