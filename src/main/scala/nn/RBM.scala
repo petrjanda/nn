@@ -60,19 +60,6 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
       Range(0, numVisible).toArray.foldLeft(0.0) { (t, j) => t + w(j) * v(j) } + b
     )
   }
-
-  @deprecated
-  def reconstruct(v: Array[Array[Double]]): Array[Array[Double]] = {
-    v.map { v =>
-      val h = Range(0, numHidden).toArray.map { i =>
-        propagateUp(v, i)
-      }
-
-      val layer = Layer(vbmat, wmat, MatBuilder(numHidden, h))
-
-      layer.activationOutput.toArray
-    }
-  }
 }
 
 object Fn {

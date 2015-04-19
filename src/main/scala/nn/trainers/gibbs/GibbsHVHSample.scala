@@ -1,6 +1,8 @@
 package nn.trainers.gibbs
 
-case class GibbsHVHSample(vhMean:Array[Double], vhSample:Array[Double], hvMean:Array[Double], hvSample:Array[Double])
+import org.jblas.DoubleMatrix
+
+case class GibbsHVHSample(vhMean:DoubleMatrix, vhSample:DoubleMatrix, hvMean:DoubleMatrix, hvSample:DoubleMatrix)
 
 object GibbsHVHSample {
   def apply(vh:GibbsSample, hv:GibbsSample): GibbsHVHSample = {

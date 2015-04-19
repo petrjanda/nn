@@ -12,46 +12,48 @@ case class ContrastiveDivergenceTrainer(nn:RBM, iterations:Int, learningRate:Dou
 
     0.until(iterations).foreach { _ =>
       dataSet.columnsAsList.toList.foreach { item =>
-        contrastiveDivergence(dataSet.length, nn, item.toArray, learningRate, k)
+        contrastiveDivergence(dataSet.length, item)
       }
     }
   }
 
-  def contrastiveDivergence(inputLength:Int, rbm:RBM, input: Array[Double], lr: Double, k: Int) {
-    val gibbs = new GibbsSampler(rbm)
-    val numHidden = rbm.numHidden
-    val numVisible = rbm.numVisible
+  def contrastiveDivergence(inputLength:Int, input: DoubleMatrix) {
+    val gibbs = new GibbsSampler(nn)
+    val numHidden = nn.numHidden
+    val numVisible = nn.numVisible
 
     val inputSample = gibbs.sampleHGivenV(input)
+
     val first = GibbsHVHSample(
-      Array.fill(numVisible) { 0.0 },
-      Array.fill(numHidden) { 0 },
+      new DoubleMatrix(1, numVisible).fill(0.0),
+      new DoubleMatrix(1, numHidden).fill(0.0),
       inputSample.mean,
       inputSample.sample
     )
 
     val g = 0.until(k).foldLeft(first) ( (old, _) => {
-      gibbs.sampleGibbsHVH(old.hvSample, old.vhMean, old.vhSample)
+      gibbs.sampleGibbsHVH(old.hvSample)
     })
 
-    updateRbm(rbm, inputSample, input, g, inputLength, lr)
+    updateRbm(inputSample, input, g, inputLength)
   }
   
-  def updateRbm(rbm: RBM, inputSample: GibbsSample, input: Array[Double], g: GibbsHVHSample, inputLength: Int, lr: Double) = {
-    val numHidden = rbm.numHidden
-    val numVisible = rbm.numVisible
+  def updateRbm(inputSample: GibbsSample, input: DoubleMatrix, g: GibbsHVHSample, inputLength: Int) = {
+    val numHidden = nn.numHidden
+    val numVisible = nn.numVisible
 
     // Update weights and bias
     Range(0, numHidden).foreach { i =>
       Range(0, numVisible).foreach { j =>
-        rbm.W(i)(j) += lr * (inputSample.mean(i) * input(j) - g.hvMean(i) * g.vhSample(j)) / inputLength
+        println(inputSample.mean)
+        nn.W(i)(j) += learningRate * (inputSample.mean.get(0, i) * input.get(0, j) - g.hvMean.get(0, i) * g.vhSample.get(0, j)) / inputLength
       }
 
-      rbm.hBias(i) += lr * (inputSample.sample(i) - g.hvMean(i)) / inputLength
+      nn.hBias(i) += learningRate * (inputSample.sample.get(0, i) - g.hvMean.get(0, i)) / inputLength
     }
 
     Range(0, numVisible).foreach { i =>
-      rbm.vBias(i) += lr * (input(i) - g.vhSample(i)) / inputLength
+      nn.vBias(i) += learningRate * (input.get(0, i) - g.vhSample.get(0, i)) / inputLength
     }
   }
 }

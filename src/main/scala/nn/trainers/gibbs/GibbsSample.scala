@@ -1,3 +1,5 @@
 package nn.trainers.gibbs
 
-case class GibbsSample(mean:Array[Double], sample:Array[Double])
+import org.jblas.DoubleMatrix
+
+case class GibbsSample(mean:DoubleMatrix, sample:DoubleMatrix)
