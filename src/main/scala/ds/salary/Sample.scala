@@ -15,13 +15,13 @@ object Sample {
   val Race = BucketsVariable("White", "Asian-Pac-Islander", "Amer-Indian-Eskimo", "Other", "Black")
 
   val inputSize = Sample.Age.size +
-//    Sample.Workclass.size +
-//    Sample.Occupation.size +
-//    Sample.Education.size +
-//    Sample.NativeCountry.size +
-//    Sample.CapitalGain.size +
-//    Sample.Sex.size +
-//    Sample.HoursPerWeek.size +
+    Sample.Workclass.size +
+    Sample.Occupation.size +
+    Sample.Education.size +
+    Sample.NativeCountry.size +
+    Sample.CapitalGain.size +
+    Sample.Sex.size +
+    Sample.HoursPerWeek.size +
     Sample.Race.size
 }
 
@@ -30,13 +30,13 @@ case class Sample(age:String, workclass:String, flnwgt:String, education:String,
                   capitalGain:String, capitalLoss:String, hoursPerWeek:String, nativeCountry:String, target:String) {
   def toInput: List[Double] =
     Sample.Age(age.toInt) ++
-//      Sample.Workclass(workclass) ++
-//      Sample.Occupation(occupation) ++
-//      Sample.Education(education) ++
-//      Sample.NativeCountry(nativeCountry) ++
-//      Sample.CapitalGain(capitalGain.toInt) ++
-//      Sample.Sex(sex) ++
-//      Sample.HoursPerWeek(hoursPerWeek.toInt) ++
+      Sample.Workclass(workclass) ++
+      Sample.Occupation(occupation) ++
+      Sample.Education(education) ++
+      Sample.NativeCountry(nativeCountry) ++
+      Sample.CapitalGain(capitalGain.toInt) ++
+      Sample.Sex(sex) ++
+      Sample.HoursPerWeek(hoursPerWeek.toInt) ++
       Sample.Race(race)
 
   def toTarget: List[Double] = {

@@ -8,8 +8,8 @@ export default Ember.Component.extend({
     this.svg = d3.select(this.$()[0]).append('svg');
 
     this.svg
-      .attr('width', 900)
-      .attr('height', 900)
+      .attr('width', 200)
+      .attr('height', 1500)
 
     Ember.run.once(this, '_draw');
   },
@@ -18,8 +18,8 @@ export default Ember.Component.extend({
     var data = this.get('data');
 
     var ps = 12;
-    var gapv = 1;
-    var gaph = 1;
+    var gapv = 0;
+    var gaph = 0;
 
     var g = this.svg.selectAll('g')
       .data(data.data)
@@ -38,7 +38,7 @@ export default Ember.Component.extend({
           .attr('width', ps)
           .attr('height', ps)
           .attr('fill', function(d) {
-            var c = 255 - Math.abs(Math.round(d * 255));
+            var c = 255 - Math.abs(Math.round(d/2 * 255));
             var col = c.toString(16);
 
             console.log(col);
@@ -48,30 +48,7 @@ export default Ember.Component.extend({
           .on("mouseover", function(d, i) { 
             console.log(d) 
             self.set('current', [d, i]);
-            // d3.select(this).attr('fill','red')
           })
-
-
-//     for(var i = 0; i < data.w; i++) {
-//       for(var j = 0; j < data.h; j++) {
-//         this.svg.append('rect')
-//           .attr('x', (ps+gaph)*i)        
-//           .attr('y', (ps+gapv)*j)        
-//           .attr('width', ps)
-//           .attr('height', ps)
-//           .attr('fill', function(d) {
-//             var c = 255 - Math.abs(Math.round(data.data[i][j] * 255));
-//             var col = c.toString(16);
-
-//             console.log(col);
-
-//             return "#%@%@%@".fmt(col, col, col);
-//           })
-//       }
-    
-//     }
-
-
   }
 
 });

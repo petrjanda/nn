@@ -16,6 +16,7 @@ import org.jblas.MatrixFunctions._
 import scala.util.Random
 
 object NNApp extends App {
+  val net :: op :: Nil = args.toList
 
 //  val train = DemographicDataSet("data/salary/adult.data")
 //  val test = DemographicDataSet("data/salary/adult.test")
@@ -47,24 +48,34 @@ object NNApp extends App {
 //  println(nn.layers.head.weights.getRow(0))
 //  println(nn.layers.tail.head.weights)
 
+  net match {
+    case "rbm" => {
+      op match {
+        case "train" => {
+          implicit val rng = new Random(System.currentTimeMillis())
 
-  implicit val rng = new Random(System.currentTimeMillis())
+          val trainSet = DemographicDataSet("data/salary/adult.data")
 
-  val trainSet = DemographicDataSet("data/salary/adult.data")
+          val nn = new RBM(trainSet.numInputs, 5)
+          ContrastiveDivergenceTrainer(nn, 1000, 0.15, 2).train(trainSet)
 
-  val nn = new RBM(trainSet.numInputs, 50)
-  ContrastiveDivergenceTrainer(nn, 1000, 0.15, 2).train(trainSet)
+          Repository.save(nn, "data/salary/net/rbm.o")
 
-  Repository.save(nn, "data/salary/net/rbm.o")
+          writeToFile("weights.txt", printMat(nn.wmat))
+        }
 
+        case "run" => {
+          val nn2 = Repository.load[RBM]("data/salary/net/rbm.o")
+          val testSet = DemographicDataSet("data/salary/adult.test")
+          val s = System.currentTimeMillis()
+          val reconstructed = nn2.reconstructM(testSet.inputs)
+          println(System.currentTimeMillis() - s)
 
-  val nn2 = Repository.load[RBM]("data/salary/net/rbm.o")
-  val testSet = DemographicDataSet("data/salary/adult.test")
-
-  writeToFile("weights.txt", printMat(nn2.wmat))
-
-//  println(BinaryClassificationScore(.5).score(testSet.inputs, nn.reconstructM(testSet)))
-
+          println(BinaryClassificationScore(.5).score(testSet.inputs, reconstructed))
+        }
+      }
+    }
+  }
 
   def printMat(mat:DoubleMatrix) = {
     mat.data.toList.map(i => (i * 10000).round / 10000.0).toString
@@ -75,10 +86,6 @@ object NNApp extends App {
     try pw.write(s) finally pw.close()
   }
 }
-
-
-import scala.util.Random
-
 
 
 
