@@ -1,17 +1,20 @@
-package nn
+package nn.trainers.backprop
 
 import nn.ds.DataSet
-import nn.fn.{WeightDecay, ObjectiveFunction}
+import nn.fn.{ObjectiveFunction, WeightDecay}
+import nn.{Layer, LayerState, NeuralNetwork}
 import org.jblas.DoubleMatrix
 
 /**
  * Backpropagation algorithm for feed forward NN with optional weight decay as a regularization.
  *
- * @param layers  List of layers.
- * @param objective Objective function.
- * @param weightDecay Weight decay settings.
+ * @param nn
  */
-case class Derivatives(layers:List[Layer], objective:ObjectiveFunction, weightDecay: WeightDecay) {
+case class Gradients(nn:NeuralNetwork) {
+  val layers:List[Layer] = nn.layers
+  val objective:ObjectiveFunction = nn.objective
+  val weightDecay: WeightDecay = nn.weightDecay
+
   /**
    * Calculate error gradient for a given dataset.
    *

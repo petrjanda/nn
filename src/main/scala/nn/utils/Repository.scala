@@ -5,7 +5,7 @@ import java.io.{FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutp
 import nn.NeuralNetwork
 
 object Repository {
-  def save(network: NeuralNetwork, file: String) {
+  def save[T](network: T, file: String) {
     val os = new ObjectOutputStream(new FileOutputStream(file))
     try {
       os.writeObject(network)
@@ -14,10 +14,10 @@ object Repository {
     }
   }
 
-  def load(file: String): NeuralNetwork = {
+  def load[T](file: String): T = {
     val is = new ObjectInputStream(new FileInputStream(file))
     try {
-      is.readObject().asInstanceOf[NeuralNetwork]
+      is.readObject().asInstanceOf[T]
     } finally {
       is.close()
     }
