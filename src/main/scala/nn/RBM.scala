@@ -8,7 +8,7 @@ import scala.util.Random
 
 class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) extends Serializable {
   @deprecated
-  var W: Array[Array[Double]] = Array.ofDim[Double](numHidden, numVisible)
+  val W: Array[Array[Double]] = Array.ofDim[Double](numHidden, numVisible)
 
   @deprecated
   var hBias: Array[Double] = Array.fill(numHidden) { 0.0 }
@@ -23,9 +23,9 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) extends
     }
   }
 
-  def wmat = MatBuilder(numHidden, numVisible, W)
-  def hbmat = MatBuilder(numHidden, hBias)
-  def vbmat = MatBuilder(numVisible, vBias)
+  var wmat = MatBuilder(numHidden, numVisible, W)
+  var hbmat = MatBuilder(numHidden, hBias)
+  var vbmat = MatBuilder(numVisible, vBias)
 
   def propagateUpM(v: DoubleMatrix): DoubleMatrix =
     Logistic(wmat.transpose.mmul(v).addColumnVector(hbmat))
@@ -35,6 +35,12 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) extends
 
   def reconstructM(dataSet:DoubleMatrix): DoubleMatrix =
     propagateDownM(propagateUpM(dataSet))
+
+  def updateWeights(diff:(DoubleMatrix, DoubleMatrix, DoubleMatrix)) = {
+    wmat = wmat.add(diff._1)
+    hbmat = hbmat.add(diff._2)
+    vbmat = vbmat.add(diff._3)
+  }
 }
 
 object Fn {

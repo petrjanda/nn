@@ -57,7 +57,15 @@ object NNApp extends App {
           val trainSet = DemographicDataSet("data/salary/adult.data")
 
           val nn = new RBM(trainSet.numInputs, 5)
-          ContrastiveDivergenceTrainer(nn, 1000, 0.15, 2).train(trainSet)
+          
+          ContrastiveDivergenceTrainer(
+            nn = nn,
+            iterations = 1000,
+            miniBatchSize = 1000,
+            numParallel = 1,
+            learningRate = 0.15,
+            k = 2
+          ).train(trainSet)
 
           Repository.save(nn, "data/salary/net/rbm.o")
 
