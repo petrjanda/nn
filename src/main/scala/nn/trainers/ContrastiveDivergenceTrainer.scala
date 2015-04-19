@@ -1,54 +1,67 @@
 package nn.trainers
 
+import nn.ds.DataSet
 import nn.trainers.gibbs.{GibbsHVHSample, GibbsSample, GibbsSampler}
 import nn.{Fn, RBM}
+import org.jblas.DoubleMatrix
 
 import scala.util.Random
 
 case class ContrastiveDivergenceTrainer(nn:RBM, iterations:Int, learningRate:Double, k:Int)(implicit rng:Random) {
-  def train(dataSet:Array[Array[Int]]) = {
-    0.until(iterations).foreach { _ =>
-      dataSet.foreach { item =>
-        contrastiveDivergence(dataSet.length, nn, item, learningRate, k)
-      }
+  import scala.collection.JavaConversions._
+
+  def train(dataSet:DataSet) = {
+    dataSet.miniBatches(1000).grouped(1).take(iterations).zipWithIndex.foreach {
+      case (batches, iteration) =>
+        val batch = batches(0)
+
+        println("Iteration:%5d".format(iteration + 1))
+
+        batch.inputs.columnsAsList.toList.foreach { item =>
+          contrastiveDivergence(batch.numExamples, item)
+        }
     }
   }
 
-  def contrastiveDivergence(inputLength:Int, rbm:RBM, input: Array[Int], lr: Double, k: Int) {
-    val gibbs = new GibbsSampler(rbm)
-    val numHidden = rbm.numHidden
-    val numVisible = rbm.numVisible
+  def contrastiveDivergence(inputLength:Int, input: DoubleMatrix) {
+    val gibbs = new GibbsSampler(nn)
+    val numHidden = nn.numHidden
+    val numVisible = nn.numVisible
 
     val inputSample = gibbs.sampleHGivenV(input)
+
     val first = GibbsHVHSample(
-      Array.fill(numVisible) { 0.0 },
-      Array.fill(numHidden) { 0 },
+      new DoubleMatrix(1, numVisible).fill(0.0),
+      new DoubleMatrix(1, numHidden).fill(0.0),
       inputSample.mean,
       inputSample.sample
     )
 
     val g = 0.until(k).foldLeft(first) ( (old, _) => {
-      gibbs.sampleGibbsHVH(old.hvSample, old.vhMean, old.vhSample)
+      gibbs.sampleGibbsHVH(old.hvSample)
     })
 
-    updateRbm(rbm, inputSample, input, g, inputLength, lr)
+    updateRbm(inputSample, input, g, inputLength)
   }
   
-  def updateRbm(rbm: RBM, inputSample: GibbsSample, input: Array[Int], g: GibbsHVHSample, inputLength: Int, lr: Double) = {
-    val numHidden = rbm.numHidden
-    val numVisible = rbm.numVisible
+  def updateRbm(inputSample: GibbsSample, input: DoubleMatrix, g: GibbsHVHSample, inputLength: Int) = {
+    val numHidden = nn.numHidden
+    val numVisible = nn.numVisible
 
     // Update weights and bias
     Range(0, numHidden).foreach { i =>
       Range(0, numVisible).foreach { j =>
-        rbm.W(i)(j) += lr * (inputSample.mean(i) * input(j) - g.hvMean(i) * g.vhSample(j)) / inputLength
+        nn.W(i)(j) += learningRate * (
+          inputSample.mean.data(i) * input.data(j) -
+            g.hvMean.data(i) * g.vhSample.data(j)
+          ) / inputLength
       }
 
-      rbm.hBias(i) += lr * (inputSample.sample(i) - g.hvMean(i)) / inputLength
+      nn.hBias(i) += learningRate * (inputSample.sample.data(i) - g.hvMean.data(i)) / inputLength
     }
 
     Range(0, numVisible).foreach { i =>
-      rbm.vBias(i) += lr * (input(i) - g.vhSample(i)) / inputLength
+      nn.vBias(i) += learningRate * (input.data(i) - g.vhSample.data(i)) / inputLength
     }
   }
 }

@@ -1,58 +1,51 @@
 package nn
 
+import nn.fn.act.Logistic
+import nn.utils.MatBuilder
+import org.jblas.DoubleMatrix
+
 import scala.util.Random
 
 class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
-  val a: Double = 1 / numVisible
+  @deprecated
   var W: Array[Array[Double]] = Array.ofDim[Double](numHidden, numVisible)
+
+  @deprecated
   var hBias: Array[Double] = Array.fill(numHidden) { 0.0 }
+
+  @deprecated
   var vBias: Array[Double] = Array.fill(numVisible) { 0.0 }
 
+  val a: Double = 1 / numVisible
   Range(0, numHidden).foreach { i =>
     Range(0, numVisible).foreach { j =>
       W(i)(j) = Fn.uniform(-a, a, rng)
     }
   }
 
-  def propagateUp(v: Array[Int], i: Int): Double = {
-    val w = W(i)
-    val b = hBias(i)
+  def wmat = MatBuilder(numHidden, numVisible, W)
+  def hbmat = MatBuilder(numHidden, hBias)
+  def vbmat = MatBuilder(numVisible, vBias)
 
-    Fn.sigmoid(
-      Range(0, numVisible).toArray.foldLeft(0.0) { (t, j) => t + w(j) * v(j) } + b
-    )
-  }
+  def propagateUpM(v: DoubleMatrix): DoubleMatrix =
+    Logistic(wmat.transpose.mmul(v).addColumnVector(hbmat))
 
-  def propagateDown(h: Array[Int], i: Int): Double = {
-    Fn.sigmoid(
-      Range(0, numHidden).toArray.foldLeft(0.0) { (t, j) => t + W(j)(i) * h(j) } + vBias(i)
-    )
-  }
+  def propagateDownM(v: DoubleMatrix): DoubleMatrix =
+    Logistic(wmat.mmul(v).addColumnVector(vbmat))
 
-  def reconstruct(v: Array[Array[Int]]): Array[Array[Double]] = {
-    v.map { v =>
-      val h = Range(0, numHidden).toArray.map { i =>
-        propagateUp(v, i)
-      }
+  def reconstructM(dataSet:DoubleMatrix): DoubleMatrix =
+    Layer(vbmat, wmat, propagateUpM(dataSet).transpose).activationOutput
 
-      val layer = Layer(numHidden, vBias, W, h)
-
-      Range(0, numVisible).toArray.map { layer.activationOutput(_) }
-    }
-  }
-
-  case class Layer(n_hidden: Int, vbias:Array[Double], W: Array[Array[Double]], h: Array[Double]) {
-    def activationOutput(i: Int) = {
-      Fn.sigmoid(
-        0.until(n_hidden).foldLeft(0.0) { (t, j) => t + W(j)(i) * h(j) } + vbias(i)
-      )
-    }
+  case class Layer(vbias: DoubleMatrix, W: DoubleMatrix, h: DoubleMatrix) {
+    def activationOutput: DoubleMatrix =
+      Logistic(W.mmul(h.transpose).addColumnVector(vbias))
   }
 }
 
 object Fn {
   def uniform(min: Double, max: Double, rng:Random): Double = rng.nextDouble() * (max - min) + min
-  def binomial(n: Int, p: Double, rng:Random): Int = {
+
+  def binomial(n: Int, p: Double, rng:Random): Double = {
     if(p < 0 || p > 1) return 0
 
     var c: Int = 0
@@ -64,8 +57,9 @@ object Fn {
       if(r < p) c += 1
     }
 
-    c
+    c.toDouble
   }
 
+  @deprecated
   def sigmoid(x: Double): Double = 1.0 / (1.0 + math.pow(math.E, -x))
 }
