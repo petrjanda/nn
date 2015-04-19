@@ -40,26 +40,6 @@ class RBM(val numVisible: Int, val numHidden: Int)(implicit rng: Random) {
     def activationOutput: DoubleMatrix =
       Logistic(W.mmul(h.transpose).addColumnVector(vbias))
   }
-
-
-
-  @deprecated
-  def propagateDown(h: Array[Double], i: Int): Double = {
-    val b = vBias(i)
-    Fn.sigmoid(
-      Range(0, numHidden).toArray.foldLeft(0.0) { (t, j) => t + W(j)(i) * h(j) } + b
-    )
-  }
-
-  @deprecated
-  def propagateUp(v: Array[Double], i: Int): Double = {
-    val w = W(i)
-    val b = hBias(i)
-
-    Fn.sigmoid(
-      Range(0, numVisible).toArray.foldLeft(0.0) { (t, j) => t + w(j) * v(j) } + b
-    )
-  }
 }
 
 object Fn {
