@@ -1,5 +1,6 @@
-package nn
+package nn.trainers.backprop
 
+import nn.NeuralNetwork
 import nn.ds.DataSet
 import nn.fn.LearningFunction
 import nn.fn.lrn.ConstantRate
@@ -23,17 +24,15 @@ class Trainer(val numIterations: Int, val miniBatchSize: Int, val numParallel: I
     }
   }
 
-  def train(network: NeuralNetwork, trainingSet: DataSet) {
-
-    val momentums = network.weights.map { _.mul(0) }
+  def train(nn: NeuralNetwork, trainingSet: DataSet) {
+    val derivatives = new Gradients(nn)
 
     trainingSet.miniBatches(miniBatchSize).grouped(numParallel).take(numIterations).zipWithIndex.foreach {
       case (batches, iteration) =>
 
-        evalIteration(iteration, network, trainingSet, batches(0))
+        evalIteration(iteration, nn, trainingSet, batches(0))
 
-        val batchGradients = batches.par.map { network.errorGradients(_) }
-        val sumGradients = batchGradients.reduce {
+        val sumGradients = batches.par.map { data => derivatives.errorGradients(data, nn.propagate(data.inputs)) }.reduce {
           (sumGradients, gradients) =>
             sumGradients.zip(gradients).map {
               case (sumGradient, gradient) => sumGradient.addi(gradient)
@@ -41,12 +40,12 @@ class Trainer(val numIterations: Int, val miniBatchSize: Int, val numParallel: I
         }
         val gradients = sumGradients.map { _.muli(1D / numParallel) }
 
-        updateWeights(network, iteration, gradients, momentums)
+        updateWeights(nn, iteration, gradients)
     }
   }
 
-  def updateWeights(network: NeuralNetwork, iteration: Int, gradients: Seq[DoubleMatrix], momentums: Seq[DoubleMatrix]) {
-    network.layers.zip(gradients).zip(momentums).foreach {
+  def updateWeights(nn: NeuralNetwork, iteration: Int, gradients: Seq[DoubleMatrix]) {
+    nn.layers.zip(gradients).zip(nn.momentums).foreach {
       case ((layer, gradient), momentum) =>
         val delta = momentum.muli(momentumMultiplier).subi(gradient)
         layer.weights.addi(delta.mul(learningRate(iteration)))
