@@ -18,8 +18,8 @@ class GibbsSampler(rbm:RBM)(implicit rng:Random) {
     GibbsSample(mean, sample(mean))
   }
 
-  def sampleVGivenH(h0Sample: DoubleMatrix): GibbsSample = {
-    val mean = rbm.propagateDownM(h0Sample)
+  def sampleVGivenH(h: DoubleMatrix): GibbsSample = {
+    val mean = rbm.propagateDownM(h)
 
     GibbsSample(mean, sample(mean))
   }
