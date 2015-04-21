@@ -1,53 +1,39 @@
 package nn
 
+import nn.ds.DataSet
+import nn.fn.ObjectiveFunction
 import nn.fn.act.Logistic
-import nn.utils.MatBuilder
+import nn.utils.{Fn, MatBuilder}
 import org.jblas.DoubleMatrix
 
 import scala.util.Random
 
 object RBM {
-  def apply(numVisible: Int, numHidden: Int)(implicit rng: Random) = {
-    val W = Fn.uniformMatrix(numVisible, numHidden, 1 / numVisible)
-    val hBias = new DoubleMatrix(1, numHidden).fill(0.0)
-    val vBias = new DoubleMatrix(1, numVisible).fill(0.0)
+  def apply(numVisible: Int, numHidden: Int, objective:ObjectiveFunction)(implicit rng: Random) = {
+    val w = Fn.uniformMatrix(numVisible, numHidden, 1 / numVisible)
+    val h = new DoubleMatrix(1, numHidden).fill(0.0)
+    val v = new DoubleMatrix(1, numVisible).fill(0.0)
 
-    new RBM(numVisible, numHidden, W, hBias, vBias)
+    new RBM(w, h, v, objective)
   }
 }
 
-class RBM(val numVisible: Int, val numHidden: Int, val W:DoubleMatrix, hBias:DoubleMatrix, vBias:DoubleMatrix)(implicit rng: Random) extends Serializable {
-  def propagateUpM(v: DoubleMatrix): DoubleMatrix =
-    Logistic(W.transpose.mmul(v).addColumnVector(hBias))
+class RBM(val w:DoubleMatrix, h:DoubleMatrix, b:DoubleMatrix, objective:ObjectiveFunction) extends Serializable {
+  def propagateUp(v: DoubleMatrix): DoubleMatrix =
+    Logistic(w.transpose.mmul(v).addColumnVector(h))
 
-  def propagateDownM(v: DoubleMatrix): DoubleMatrix =
-    Logistic(W.mmul(v).addColumnVector(vBias))
+  def propagateDown(v: DoubleMatrix): DoubleMatrix =
+    Logistic(w.mmul(v).addColumnVector(b))
 
-  def reconstructM(dataSet:DoubleMatrix): DoubleMatrix =
-    propagateDownM(propagateUpM(dataSet))
+  def reconstruct(dataSet:DoubleMatrix): DoubleMatrix =
+    propagateDown(propagateUp(dataSet))
 
-  def updateWeights(diff:(DoubleMatrix, DoubleMatrix, DoubleMatrix)):RBM = {
-    new RBM(numVisible, numHidden, W.add(diff._1), hBias.add(diff._2), vBias.add(diff._3))
+  def loss(data: DataSet): Double = {
+    val outputs = reconstruct(data.inputs)
+    
+    objective(outputs, data.inputs)
   }
-}
 
-object Fn {
-  def uniformMatrix(r:Int, c:Int, a:Double)(implicit rng:Random) = new DoubleMatrix(r, c, Range(0, r* c).map(_ => Fn.uniform(-a, a, rng)):_*)
-
-  def uniform(min: Double, max: Double, rng:Random): Double = rng.nextDouble() * (max - min) + min
-
-  def binomial(n: Int, p: Double, rng:Random): Double = {
-    if(p < 0 || p > 1) return 0
-
-    var c: Int = 0
-    var r: Double = 0
-
-    var i: Int = 0
-    for(i <- 0 until n) {
-      r = rng.nextDouble()
-      if(r < p) c += 1
-    }
-
-    c.toDouble
-  }
+  def updateWeights(diff:(DoubleMatrix, DoubleMatrix, DoubleMatrix)):RBM =
+    new RBM(w.add(diff._1), h.add(diff._2), b.add(diff._3), objective)
 }

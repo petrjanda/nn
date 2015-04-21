@@ -57,8 +57,9 @@ object NNApp extends App {
           val trainSet = DemographicDataSet("data/salary/adult.data")
 
           val nn = ContrastiveDivergenceTrainer(
-            nn = RBM(trainSet.numInputs, 5),
-            iterations = 200,
+            nn = RBM(trainSet.numInputs, 5, CrossEntropyError),
+            iterations = 500,
+            evalIterations = 50,
             miniBatchSize = 1000,
             numParallel = 1,
             learningRate = 0.15,
@@ -67,24 +68,26 @@ object NNApp extends App {
 
           Repository.save(nn, "data/salary/net/rbm.o")
 
-          writeToFile("weights.txt", printMat(nn.W))
+          writeToFile("weights.txt", printMat(nn.w))
         }
 
         case "run" => {
           val nn2 = Repository.load[RBM]("data/salary/net/rbm.o")
           val testSet = DemographicDataSet("data/salary/adult.test")
-          val s = System.currentTimeMillis()
-          val reconstructed = nn2.reconstructM(testSet.inputs)
-          println(System.currentTimeMillis() - s)
+//          val s = System.currentTimeMillis()
+          val reconstructed = nn2.reconstruct(testSet.inputs)
 
-          println(BinaryClassificationScore(.5).score(testSet.inputs, reconstructed))
+          println(nn2.loss(testSet))
+//          println(System.currentTimeMillis() - s)
+
+//          println(BinaryClassificationScore(.5).score(testSet.inputs, reconstructed))
         }
       }
     }
   }
 
   def printMat(mat:DoubleMatrix) = {
-    mat.data.toList.map(i => (i * 10000).round / 10000.0).toString
+    s"{r:${mat.rows},c:${mat.columns},d:[${mat.data.toList.map(i => (i * 10000).round / 10000.0).mkString(",")}]"
   }
 
   def writeToFile(p: String, s: String): Unit = {

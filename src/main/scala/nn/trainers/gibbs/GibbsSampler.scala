@@ -1,6 +1,7 @@
 package nn.trainers.gibbs
 
-import nn.{Fn, RBM}
+import nn.RBM
+import nn.utils.Fn
 import org.jblas.DoubleMatrix
 
 import scala.util.Random
@@ -13,13 +14,13 @@ class GibbsSampler(rbm:RBM)(implicit rng:Random) {
   }
 
   def sampleHGivenV(v: DoubleMatrix): GibbsSample = {
-    val mean = rbm.propagateUpM(v)
+    val mean = rbm.propagateUp(v)
 
     GibbsSample(mean, sample(mean))
   }
 
   def sampleVGivenH(h: DoubleMatrix): GibbsSample = {
-    val mean = rbm.propagateDownM(h)
+    val mean = rbm.propagateDown(h)
 
     GibbsSample(mean, sample(mean))
   }

@@ -37,7 +37,7 @@ class RBMTest extends FreeSpec with Matchers {
 
     val rbm = trainer.train(MatBuilder(3, 3, trainSet))
 
-    rbm.reconstructM(testSetMat) should equal(
+    rbm.reconstruct(testSetMat) should equal(
       new DoubleMatrix(3, 4,
         0.0033295693586680845, 0.2951388824444747, 0.9978182978208314,
         0.0072769327881372055, 0.3107427954102499, 0.9939388505529718,

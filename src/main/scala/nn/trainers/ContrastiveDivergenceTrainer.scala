@@ -2,20 +2,27 @@ package nn.trainers
 
 import nn.ds.DataSet
 import nn.trainers.gibbs.{GibbsHVHSample, GibbsSample, GibbsSampler}
-import nn.{Fn, RBM}
+import nn.{NeuralNetwork, RBM}
 import org.jblas.DoubleMatrix
 
 import scala.util.Random
 
-case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, miniBatchSize:Int, numParallel:Int, learningRate:Double, k:Int)(implicit rng:Random) {
+case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, evalIterations:Int, miniBatchSize:Int, numParallel:Int, learningRate:Double, k:Int)(implicit rng:Random) {
   import scala.collection.JavaConversions._
+
+  def evalIteration(iteration: Int, trainingSet: DataSet) {
+    if ((iteration - 1) % evalIterations == 0) {
+      val loss = nn.loss(trainingSet)
+      println("Iteration:%5d, Loss: %.5f".format(iteration + 1, loss))
+    }
+  }
 
   def train(dataSet:DataSet):RBM = {
     dataSet.miniBatches(miniBatchSize).grouped(numParallel).take(iterations).zipWithIndex.foreach {
       case (batches, iteration) =>
         val batch = batches(0)
 
-        println("Iteration:%5d".format(iteration + 1))
+        evalIteration(iteration, dataSet)
 
         batch.inputs.columnsAsList.toList.foreach { item =>
           nn = nn.updateWeights(
@@ -41,8 +48,8 @@ case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, mini
 
   def contrastiveDivergence(inputLength:Int, input: DoubleMatrix) = {
     val gibbs = new GibbsSampler(nn)
-    val numHidden = nn.numHidden
-    val numVisible = nn.numVisible
+    val numHidden = nn.w.rows
+    val numVisible = nn.w.columns
 
     val inputSample = gibbs.sampleHGivenV(input)
 
