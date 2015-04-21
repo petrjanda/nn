@@ -1,5 +1,6 @@
 package nn
 
+import nn.fn.obj.CrossEntropyError
 import nn.trainers.ContrastiveDivergenceTrainer
 import nn.utils.MatBuilder
 import org.jblas.DoubleMatrix
@@ -27,8 +28,9 @@ class RBMTest extends FreeSpec with Matchers {
     val testSetMat = MatBuilder(4, 3, testSet)
 
     val trainer = ContrastiveDivergenceTrainer(
-      nn = RBM(3, 2),
+      nn = RBM(3, 2, CrossEntropyError),
       iterations = 1000,
+      evalIterations = 100,
       miniBatchSize = 1000,
       numParallel = 1,
       learningRate = 0.1,

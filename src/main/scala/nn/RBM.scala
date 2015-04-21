@@ -19,11 +19,11 @@ object RBM {
 }
 
 class RBM(val w:DoubleMatrix, h:DoubleMatrix, v:DoubleMatrix, objective:ObjectiveFunction) extends Serializable {
-  def propagateUp(v: DoubleMatrix): DoubleMatrix =
-    Logistic(w.transpose.mmul(v).addColumnVector(h))
+  def propagateUp(value: DoubleMatrix): DoubleMatrix =
+    Logistic(w.transpose.mmul(value).addColumnVector(h))
 
-  def propagateDown(v: DoubleMatrix): DoubleMatrix =
-    Logistic(w.mmul(v).addColumnVector(v))
+  def propagateDown(value: DoubleMatrix): DoubleMatrix =
+    Logistic(w.mmul(value).addColumnVector(v))
 
   def reconstruct(dataSet:DoubleMatrix): DoubleMatrix =
     propagateDown(propagateUp(dataSet))
