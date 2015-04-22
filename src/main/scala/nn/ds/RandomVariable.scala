@@ -1,6 +1,6 @@
 package nn.ds
 
-trait Variable[T] {
+trait RandomVariable[T] {
   def size:Int
 
   def apply(v:T):List[Double]

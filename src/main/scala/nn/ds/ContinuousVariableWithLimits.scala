@@ -1,6 +1,6 @@
 package nn.ds
 
-case class ContinuousVariableWithLimits[T](comp:(T, T) => Boolean, limits:T*) extends Variable[T] {
+case class ContinuousVariableWithLimits[T](comp:(T, T) => Boolean, limits:T*) extends RandomVariable[T] {
   def size = limits.size + 1
 
   def apply(v:T):List[Double] = {
