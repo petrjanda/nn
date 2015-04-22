@@ -1,13 +1,14 @@
 package nn.trainers
 
 import nn.ds.DataSet
+import nn.fn.LearningFunction
 import nn.trainers.gibbs.{GibbsHVHSample, GibbsSample, GibbsSampler}
 import nn.{FeedForwardNN$, RBM}
 import org.jblas.DoubleMatrix
 
 import scala.util.Random
 
-case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, evalIterations:Int, miniBatchSize:Int, numParallel:Int, learningRate:Double, k:Int)(implicit rng:Random) {
+case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, evalIterations:Int, miniBatchSize:Int, numParallel:Int, learningRate:LearningFunction, k:Int)(implicit rng:Random) {
   import scala.collection.JavaConversions._
 
   def evalIteration(iteration: Int, trainingSet: DataSet) {
@@ -25,8 +26,10 @@ case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, eval
         evalIteration(iteration, dataSet)
 
         batch.features.columnsAsList.toList.foreach { item =>
+          val divergence = contrastiveDivergence(batch.numExamples, item)
+
           nn = nn.updateWeights(
-            contrastiveDivergence(batch.numExamples, item)
+            calculateDiff(divergence._2, item, divergence._1, batch.numExamples, iteration)
           )
         }
     }
@@ -39,6 +42,7 @@ case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, eval
     val numHidden = nn.w.rows
     val numVisible = nn.w.columns
 
+    println(input.rows, input.columns)
     val inputSample = gibbs.sampleHGivenV(input)
 
     val first = GibbsHVHSample(
@@ -52,19 +56,19 @@ case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, eval
       gibbs.sampleGibbsHVH(old.hvSample)
     })
 
-    calculateDiff(inputSample, input, g, inputLength)
+    (g, inputSample)
   }
 
-  def calculateDiff(inputSample: GibbsSample, input: DoubleMatrix, g: GibbsHVHSample, inputLength: Int) = {
+  def calculateDiff(inputSample: GibbsSample, input: DoubleMatrix, g: GibbsHVHSample, inputLength: Int, iteration: Int) = {
+    val rate = learningRate(iteration) / inputLength
     val weights = inputSample.mean
       .mmul(input.transpose)
       .sub(g.hvMean.mmul(g.vhSample.transpose))
-      .mul(learningRate / inputLength)
+      .mul(rate)
       .transpose
 
-    val hBias = inputSample.sample.sub(g.hvMean).mul(learningRate / inputLength)
-
-    val vBias = input.sub(g.vhSample).mul(learningRate / inputLength)
+    val hBias = inputSample.sample.sub(g.hvMean).mul(rate)
+    val vBias = input.sub(g.vhSample).mul(rate)
 
     (weights, hBias, vBias)
   }

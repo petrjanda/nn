@@ -1,6 +1,7 @@
 package nn
 
 import nn.ds.DataSet
+import nn.fn.lrn.ConstantRate
 import nn.fn.obj.CrossEntropyError
 import nn.fn.scr.BinaryClassificationScore
 import nn.trainers.ContrastiveDivergenceTrainer
@@ -36,7 +37,7 @@ class RBMTest extends FlatSpec with Matchers {
       evalIterations = 10000,
       miniBatchSize = 5,
       numParallel = 1,
-      learningRate = 0.1,
+      learningRate = ConstantRate(0.1),
       k = 2
     )
 
