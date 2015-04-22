@@ -66,7 +66,7 @@ object NNApp extends App {
 
           val nn = ContrastiveDivergenceTrainer(
             nn = RBM(trainSet.numInputs, 20, BinaryClassificationScore(.5), CrossEntropyError),
-            iterations = 1,
+            iterations = 50000,
             evalIterations = 100,
             miniBatchSize = 100,
             numParallel = 1,

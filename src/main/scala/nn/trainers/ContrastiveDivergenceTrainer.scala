@@ -14,7 +14,7 @@ case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, eval
   def evalIteration(iteration: Int, trainingSet: DataSet) {
     if ((iteration + 1) % evalIterations == 0) {
       val loss = nn.loss(trainingSet)
-      println("Iteration:%5d, Loss: %.5f".format(iteration + 1, loss))
+      println("Iteration:%5d, Loss: %.10f".format(iteration + 1, loss))
     }
   }
 
@@ -25,13 +25,11 @@ case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, eval
 
         evalIteration(iteration, dataSet)
 
-        batch.features.columnsAsList.toList.foreach { item =>
-          val divergence = contrastiveDivergence(batch.numExamples, item)
+        val divergence = contrastiveDivergence(batch.numExamples, batch.features)
 
-          nn = nn.updateWeights(
-            calculateDiff(divergence._2, item, divergence._1, batch.numExamples, iteration)
-          )
-        }
+        nn = nn.updateWeights(
+          calculateDiff(divergence._2, batch.features, divergence._1, batch.numExamples, iteration)
+        )
     }
 
     nn
@@ -42,12 +40,11 @@ case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, eval
     val numHidden = nn.w.rows
     val numVisible = nn.w.columns
 
-    println(input.rows, input.columns)
     val inputSample = gibbs.sampleHGivenV(input)
 
     val first = GibbsHVHSample(
-      new DoubleMatrix(1, numVisible).fill(0.0),
-      new DoubleMatrix(1, numHidden).fill(0.0),
+      new DoubleMatrix(input.rows, numVisible).fill(0.0),
+      new DoubleMatrix(input.rows, numHidden).fill(0.0),
       inputSample.mean,
       inputSample.sample
     )
@@ -70,7 +67,7 @@ case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, eval
     val hBias = inputSample.sample.sub(g.hvMean).mul(rate)
     val vBias = input.sub(g.vhSample).mul(rate)
 
-    (weights, hBias, vBias)
+    (weights, hBias.rowMeans(), vBias.rowMeans())
   }
 }
 
