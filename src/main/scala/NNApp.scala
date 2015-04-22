@@ -15,40 +15,46 @@ import org.jblas.DoubleMatrix
 import scala.util.Random
 
 object NNApp extends App {
-  val net :: op :: Nil = args.toList
+  val net :: op :: tail = args.toList
 
   net match {
     case "ff" => {
-        val trainingSet = DemographicDataSet("data/salary/adult.data")
-        val test = DemographicDataSet("data/salary/adult.test")
+      op match {
 
-        val nn = FeedForwardNN(
-          Layer(trainingSet.numInputs, 10, HyperbolicTangent) :+
-          Layer(trainingSet.numOutputs, Logistic),
+        case "train" => {
+          val trainingPath :: Nil = tail
+          val trainingSet = DemographicDataSet(trainingPath)
 
-          objective = CrossEntropyError,
-          score = BinaryClassificationScore(.6),
-          weightDecay = WeightDecay(0.0)
-        )
+          val nn = FeedForwardNN(
+            Layer(trainingSet.numInputs, 10, HyperbolicTangent) :+
+              Layer(trainingSet.numOutputs, Logistic),
 
-        val base = nn.eval(test)
-        println(s"Iteration: base, Accuracy: $base")
+            objective = CrossEntropyError,
+            score = BinaryClassificationScore(.6),
+            weightDecay = WeightDecay(0.0)
+          )
 
-        BackpropagationTrainer(
-          nn = nn,
-          numIterations = 50000,
-          miniBatchSize = 500,
-          learningRate = AnnealingRate(.1, 20000),
-          evalIterations = 2000,
-          momentumMultiplier = 0.2
-        ).train(trainingSet)
+          BackpropagationTrainer(
+            nn = nn,
+            numIterations = 50000,
+            miniBatchSize = 500,
+            learningRate = AnnealingRate(.1, 20000),
+            evalIterations = 2000,
+            momentumMultiplier = 0.2
+          ).train(trainingSet)
 
-        val testing = nn.eval(test)
+          Repository.save(nn, "data/salary/net/ffn.o")
+        }
 
-        println(s"Iteration: test, Accuracy: $testing")
+        case "run" => {
+          val testingPath :: Nil = tail
+          val testingSet = DemographicDataSet(testingPath)
 
-        println(nn.layers.head.weights.getRow(0))
-        println(nn.layers.tail.head.weights)
+          val nn = Repository.load[FeedForwardNN]("data/salary/net/ffn.o")
+
+          println(nn.eval(testingSet))
+        }
+      }
     }
 
     case "rbm" => {
@@ -74,15 +80,11 @@ object NNApp extends App {
         }
 
         case "run" => {
-          val nn2 = Repository.load[RBM]("data/salary/net/rbm.o")
+          val nn = Repository.load[RBM]("data/salary/net/rbm.o")
           val testSet = DemographicDataSet("data/salary/adult.test")
-//          val s = System.currentTimeMillis()
-          val reconstructed = nn2.reconstruct(testSet)
+          val reconstructed = nn.reconstruct(testSet)
 
-          println(nn2.loss(testSet))
-//          println(System.currentTimeMillis() - s)
-
-//          println(BinaryClassificationScore(.5).score(testSet.inputs, reconstructed))
+          println(nn.loss(testSet))
         }
       }
     }

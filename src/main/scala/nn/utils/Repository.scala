@@ -2,8 +2,6 @@ package nn.utils
 
 import java.io.{FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutputStream}
 
-import nn.FeedForwardNN$
-
 object Repository {
   def save[T](network: T, file: String) {
     val os = new ObjectOutputStream(new FileOutputStream(file))
