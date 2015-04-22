@@ -12,7 +12,7 @@ object Fn {
 
   def uniform(min: Double, max: Double, rng:Random): Double = rng.nextDouble() * (max - min) + min
 
-  def binomial(n: Int, p: Double, rng:Random): Double = {
+  def binomial(n: Int, p: Double)(implicit rng:Random): Double = {
     if(p < 0 || p > 1) return 0
 
     var c: Int = 0

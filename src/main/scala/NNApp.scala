@@ -13,42 +13,46 @@ import nn.utils.Repository
 import org.jblas.DoubleMatrix
 import org.jblas.MatrixFunctions._
 
+
+
 import scala.util.Random
 
 object NNApp extends App {
   val net :: op :: Nil = args.toList
 
-//  val train = DemographicDataSet("data/salary/adult.data")
-//  val test = DemographicDataSet("data/salary/adult.test")
-//
-//  val nn = NeuralNetwork(
-//    Layer(train.numInputs, 10, HyperbolicTangent) :+
-//    Layer(train.numOutputs, Logistic),
-//
-//    objective = CrossEntropyError,
-//    score = BinaryClassificationScore(.6),
-//    weightDecay = WeightDecay(0.0)
-//  )
-//
-//  val base = nn.eval(test)
-//  println(s"Iteration: base, Accuracy: $base")
-//
-//  Trainer(
-//    numIterations = 20000,
-//    miniBatchSize = 1000,
-//    learningRate = AnnealingRate(.1, 20000),
-//    evalIterations = 2000,
-//    momentumMultiplier = 0.2
-//  ).train(nn, train)
-//
-//  val testing = nn.eval(test)
-//
-//  println(s"Iteration: test, Accuracy: $testing")
-//
-//  println(nn.layers.head.weights.getRow(0))
-//  println(nn.layers.tail.head.weights)
-
   net match {
+    case "ff" => {
+        val train = DemographicDataSet("data/salary/adult.data")
+        val test = DemographicDataSet("data/salary/adult.test")
+
+        val nn = NeuralNetwork(
+          Layer(train.numInputs, 10, HyperbolicTangent) :+
+          Layer(train.numOutputs, Logistic),
+
+          objective = CrossEntropyError,
+          score = BinaryClassificationScore(.6),
+          weightDecay = WeightDecay(0.0)
+        )
+
+        val base = nn.eval(test)
+        println(s"Iteration: base, Accuracy: $base")
+
+        Trainer(
+          numIterations = 50000,
+          miniBatchSize = 500,
+          learningRate = AnnealingRate(.1, 20000),
+          evalIterations = 2000,
+          momentumMultiplier = 0.2
+        ).train(nn, train)
+
+        val testing = nn.eval(test)
+
+        println(s"Iteration: test, Accuracy: $testing")
+
+        println(nn.layers.head.weights.getRow(0))
+        println(nn.layers.tail.head.weights)
+    }
+
     case "rbm" => {
       op match {
         case "train" => {
@@ -57,12 +61,12 @@ object NNApp extends App {
           val trainSet = DemographicDataSet("data/salary/adult.data")
 
           val nn = ContrastiveDivergenceTrainer(
-            nn = RBM(trainSet.numInputs, 5, CrossEntropyError),
-            iterations = 500,
-            evalIterations = 50,
-            miniBatchSize = 1000,
+            nn = RBM(trainSet.numInputs, 100, CrossEntropyError),
+            iterations = 50000,
+            evalIterations = 100,
+            miniBatchSize = 100,
             numParallel = 1,
-            learningRate = 0.15,
+            learningRate = 0.8,
             k = 2
           ).train(trainSet)
 
@@ -75,7 +79,7 @@ object NNApp extends App {
           val nn2 = Repository.load[RBM]("data/salary/net/rbm.o")
           val testSet = DemographicDataSet("data/salary/adult.test")
 //          val s = System.currentTimeMillis()
-          val reconstructed = nn2.reconstruct(testSet.inputs)
+          val reconstructed = nn2.reconstruct(testSet)
 
           println(nn2.loss(testSet))
 //          println(System.currentTimeMillis() - s)

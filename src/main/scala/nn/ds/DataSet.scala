@@ -4,17 +4,17 @@ import org.jblas.DoubleMatrix
 
 abstract trait DataSet {
 
-  val inputs: DoubleMatrix
-  val targets: DoubleMatrix
+  def features: DoubleMatrix
+  def targets: DoubleMatrix
 
-  val numExamples = inputs.columns
-  val numInputs = inputs.rows
-  val numOutputs = targets.rows
+  lazy val numExamples = features.columns
+  lazy val numInputs = features.rows
+  lazy val numOutputs = targets.rows
 
-  def copy(inputs: DoubleMatrix, targets: DoubleMatrix): DataSet
+  def cp(inputs: DoubleMatrix, targets: DoubleMatrix): DataSet
 
   def batch(columns: Array[Int] ): DataSet = {
-    copy(inputs.getColumns(columns), targets.getColumns(columns))
+    cp(features.getColumns(columns), targets.getColumns(Array(0)))
   }
 
   def miniBatches(batchSize: Int): Iterator[DataSet] = {

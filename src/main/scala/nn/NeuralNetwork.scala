@@ -10,10 +10,10 @@ class NeuralNetwork(val layers: List[Layer], val objective: ObjectiveFunction, v
   def momentums: List[DoubleMatrix] = weights.map(_.mul(0))
 
   def eval(data: DataSet): Double =
-    score.score(compute(data.inputs), data.targets)
+    score.score(compute(data.features), data.targets)
 
   def loss(data: DataSet): Double = {
-    val outputs = propagate(data.inputs)
+    val outputs = propagate(data.features)
     weightDecay(layers, objective(outputs.last.activationOutput, data.targets))
   }
 

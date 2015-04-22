@@ -5,8 +5,9 @@ import org.jblas.DoubleMatrix
 import org.jblas.MatrixFunctions._
 
 object CrossEntropyError extends ObjectiveFunction {
-  def apply(y: DoubleMatrix, t: DoubleMatrix): Double =
-    -((log(y).muli(t).columnSums).mean)
+  def apply(a: DoubleMatrix, y: DoubleMatrix): Double = {
+    - y.mul(log(a)).add(y.neg.add(1).mul(log(a.neg.add(1)))).columnSums.mean
+  }
 
   def derivative(x: DoubleMatrix, y: DoubleMatrix): DoubleMatrix =
     x.sub(y).muli(1.0 / y.columns)

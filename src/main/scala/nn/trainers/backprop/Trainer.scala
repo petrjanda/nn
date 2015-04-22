@@ -32,7 +32,7 @@ class Trainer(val numIterations: Int, val miniBatchSize: Int, val numParallel: I
 
         evalIteration(iteration, nn, trainingSet, batches(0))
 
-        val sumGradients = batches.par.map { data => derivatives.errorGradients(data, nn.propagate(data.inputs)) }.reduce {
+        val sumGradients = batches.par.map { data => derivatives.errorGradients(data, nn.propagate(data.features)) }.reduce {
           (sumGradients, gradients) =>
             sumGradients.zip(gradients).map {
               case (sumGradient, gradient) => sumGradient.addi(gradient)

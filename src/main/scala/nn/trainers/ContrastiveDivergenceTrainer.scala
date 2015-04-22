@@ -11,7 +11,7 @@ case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, eval
   import scala.collection.JavaConversions._
 
   def evalIteration(iteration: Int, trainingSet: DataSet) {
-    if ((iteration - 1) % evalIterations == 0) {
+    if ((iteration + 1) % evalIterations == 0) {
       val loss = nn.loss(trainingSet)
       println("Iteration:%5d, Loss: %.5f".format(iteration + 1, loss))
     }
@@ -24,23 +24,11 @@ case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, eval
 
         evalIteration(iteration, dataSet)
 
-        batch.inputs.columnsAsList.toList.foreach { item =>
+        batch.features.columnsAsList.toList.foreach { item =>
           nn = nn.updateWeights(
             contrastiveDivergence(batch.numExamples, item)
           )
         }
-    }
-
-    nn
-  }
-
-  def train(inputs:DoubleMatrix):RBM = {
-    0.until(iterations).foreach { _ =>
-      inputs.columnsAsList.toList.foreach { item =>
-        nn = nn.updateWeights(
-          contrastiveDivergence(inputs.columns, item)
-        )
-      }
     }
 
     nn

@@ -18,20 +18,20 @@ object RBM {
   }
 }
 
-class RBM(val w:DoubleMatrix, h:DoubleMatrix, v:DoubleMatrix, objective:ObjectiveFunction) extends Serializable {
+class RBM(val w:DoubleMatrix, val h:DoubleMatrix, val v:DoubleMatrix, objective:ObjectiveFunction) extends Serializable {
   def propagateUp(value: DoubleMatrix): DoubleMatrix =
     Logistic(w.transpose.mmul(value).addColumnVector(h))
 
   def propagateDown(value: DoubleMatrix): DoubleMatrix =
     Logistic(w.mmul(value).addColumnVector(v))
 
-  def reconstruct(dataSet:DoubleMatrix): DoubleMatrix =
-    propagateDown(propagateUp(dataSet))
+  def reconstruct(dataSet: DataSet): DoubleMatrix =
+    propagateDown(propagateUp(dataSet.features))
 
   def loss(data: DataSet): Double = {
-    val outputs = reconstruct(data.inputs)
+    val outputs = reconstruct(data)
     
-    objective(outputs, data.inputs)
+    objective(outputs, data.features)
   }
 
   def updateWeights(diff:(DoubleMatrix, DoubleMatrix, DoubleMatrix)):RBM =

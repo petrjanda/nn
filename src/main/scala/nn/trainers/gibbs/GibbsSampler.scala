@@ -26,6 +26,6 @@ class GibbsSampler(rbm:RBM)(implicit rng:Random) {
   }
 
   private def sample(m:DoubleMatrix): DoubleMatrix = {
-    new DoubleMatrix(m.rows, m.columns, m.data.map { s => Fn.binomial(1, s, rng) }:_*)
+    new DoubleMatrix(m.rows, m.columns, m.data.map { s => Fn.binomial(1, s) }:_*)
   }
 }

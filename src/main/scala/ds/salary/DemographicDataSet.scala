@@ -5,8 +5,8 @@ import nn.ds.DataSet
 
 import scala.util.{Try, Success}
 
-class DemographicDataSet(val inputs:DoubleMatrix, val targets:DoubleMatrix) extends DataSet {
-  def copy(inputs: DoubleMatrix, targets: DoubleMatrix): DataSet =
+class DemographicDataSet(val features:DoubleMatrix, val targets:DoubleMatrix) extends DataSet {
+  def cp(inputs: DoubleMatrix, targets: DoubleMatrix): DataSet =
     new DemographicDataSet(inputs, targets)
 }
 

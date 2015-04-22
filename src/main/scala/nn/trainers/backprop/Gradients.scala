@@ -27,7 +27,7 @@ case class Gradients(nn:NeuralNetwork) {
 
     derivatives(outErrorDerivative, outputs).zipWithIndex.map {
       case (derivative, i) =>
-        val x = if (i > 0) outputs(i - 1).activationOutput else data.inputs
+        val x = if (i > 0) outputs(i - 1).activationOutput else data.features
 
         decayed(i, gradient(x, derivative))
     }
