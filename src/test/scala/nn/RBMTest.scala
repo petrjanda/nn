@@ -2,6 +2,7 @@ package nn
 
 import nn.ds.DataSet
 import nn.fn.obj.CrossEntropyError
+import nn.fn.scr.BinaryClassificationScore
 import nn.trainers.ContrastiveDivergenceTrainer
 import nn.utils.MatBuilder
 import org.jblas.DoubleMatrix
@@ -30,7 +31,7 @@ class RBMTest extends FlatSpec with Matchers {
     ))
 
     val trainer = ContrastiveDivergenceTrainer(
-      nn = RBM(3, 2, CrossEntropyError),
+      nn = RBM(3, 2, BinaryClassificationScore(.5), CrossEntropyError),
       iterations = 1000,
       evalIterations = 10000,
       miniBatchSize = 5,
@@ -45,7 +46,7 @@ class RBMTest extends FlatSpec with Matchers {
 
     rbm.reconstruct(testSet) should equal(
       new DoubleMatrix(3, 1,
-        0.013665678821389405, 0.9861983305985876, 0.9853362760435744
+        0.0034251569426307998, 0.9972447999914791, 0.9970672848954149
       )
     )
   }

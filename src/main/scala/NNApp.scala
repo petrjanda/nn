@@ -8,12 +8,9 @@ import nn.fn.lrn.AnnealingRate
 import nn.fn.obj.CrossEntropyError
 import nn.fn.scr.BinaryClassificationScore
 import nn.trainers.ContrastiveDivergenceTrainer
-import nn.trainers.backprop.Trainer
+import nn.trainers.backprop.BackpropagationTrainer
 import nn.utils.Repository
 import org.jblas.DoubleMatrix
-import org.jblas.MatrixFunctions._
-
-
 
 import scala.util.Random
 
@@ -22,12 +19,12 @@ object NNApp extends App {
 
   net match {
     case "ff" => {
-        val train = DemographicDataSet("data/salary/adult.data")
+        val trainingSet = DemographicDataSet("data/salary/adult.data")
         val test = DemographicDataSet("data/salary/adult.test")
 
-        val nn = NeuralNetwork(
-          Layer(train.numInputs, 10, HyperbolicTangent) :+
-          Layer(train.numOutputs, Logistic),
+        val nn = FeedForwardNN(
+          Layer(trainingSet.numInputs, 10, HyperbolicTangent) :+
+          Layer(trainingSet.numOutputs, Logistic),
 
           objective = CrossEntropyError,
           score = BinaryClassificationScore(.6),
@@ -37,13 +34,14 @@ object NNApp extends App {
         val base = nn.eval(test)
         println(s"Iteration: base, Accuracy: $base")
 
-        Trainer(
+        BackpropagationTrainer(
+          nn = nn,
           numIterations = 50000,
           miniBatchSize = 500,
           learningRate = AnnealingRate(.1, 20000),
           evalIterations = 2000,
           momentumMultiplier = 0.2
-        ).train(nn, train)
+        ).train(trainingSet)
 
         val testing = nn.eval(test)
 
@@ -61,7 +59,7 @@ object NNApp extends App {
           val trainSet = DemographicDataSet("data/salary/adult.data")
 
           val nn = ContrastiveDivergenceTrainer(
-            nn = RBM(trainSet.numInputs, 100, CrossEntropyError),
+            nn = RBM(trainSet.numInputs, 100, BinaryClassificationScore(.5), CrossEntropyError),
             iterations = 50000,
             evalIterations = 100,
             miniBatchSize = 100,

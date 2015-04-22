@@ -2,7 +2,7 @@ package nn.utils
 
 import java.io.{FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutputStream}
 
-import nn.NeuralNetwork
+import nn.FeedForwardNN$
 
 object Repository {
   def save[T](network: T, file: String) {

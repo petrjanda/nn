@@ -1,7 +1,7 @@
 package nn
 
 import nn.ds.DataSet
-import nn.fn.ObjectiveFunction
+import nn.fn.{ScoreFunction, ObjectiveFunction}
 import nn.fn.act.Logistic
 import nn.utils.{Fn, MatBuilder}
 import org.jblas.DoubleMatrix
@@ -9,16 +9,16 @@ import org.jblas.DoubleMatrix
 import scala.util.Random
 
 object RBM {
-  def apply(numVisible: Int, numHidden: Int, objective:ObjectiveFunction)(implicit rng: Random) = {
+  def apply(numVisible: Int, numHidden: Int, score:ScoreFunction, objective:ObjectiveFunction)(implicit rng: Random) = {
     val w = Fn.uniformMatrix(numVisible, numHidden, 1 / numVisible)
-    val h = new DoubleMatrix(1, numHidden).fill(0.0)
-    val v = new DoubleMatrix(1, numVisible).fill(0.0)
+    val h = DoubleMatrix.zeros(numHidden)
+    val v = DoubleMatrix.zeros(numVisible)
 
-    new RBM(w, h, v, objective)
+    new RBM(w, h, v, score, objective)
   }
 }
 
-class RBM(val w:DoubleMatrix, val h:DoubleMatrix, val v:DoubleMatrix, objective:ObjectiveFunction) extends Serializable {
+class RBM(val w:DoubleMatrix, val h:DoubleMatrix, val v:DoubleMatrix, score:ScoreFunction, objective:ObjectiveFunction) extends Serializable with NeuralNetwork {
   def propagateUp(value: DoubleMatrix): DoubleMatrix =
     Logistic(w.transpose.mmul(value).addColumnVector(h))
 
@@ -34,6 +34,13 @@ class RBM(val w:DoubleMatrix, val h:DoubleMatrix, val v:DoubleMatrix, objective:
     objective(outputs, data.features)
   }
 
+  def eval(data: DataSet): Double = {
+    val outputs = reconstruct(data)
+
+    score.score(outputs, outputs)
+  }
+
+
   def updateWeights(diff:(DoubleMatrix, DoubleMatrix, DoubleMatrix)):RBM =
-    new RBM(w.add(diff._1), h.add(diff._2), v.add(diff._3), objective)
+    new RBM(w.add(diff._1), h.add(diff._2), v.add(diff._3), score, objective)
 }

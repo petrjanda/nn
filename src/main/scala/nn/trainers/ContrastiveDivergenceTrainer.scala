@@ -2,7 +2,7 @@ package nn.trainers
 
 import nn.ds.DataSet
 import nn.trainers.gibbs.{GibbsHVHSample, GibbsSample, GibbsSampler}
-import nn.{NeuralNetwork, RBM}
+import nn.{FeedForwardNN$, RBM}
 import org.jblas.DoubleMatrix
 
 import scala.util.Random
