@@ -6,7 +6,7 @@ import nn.fn.WeightDecay
 import nn.fn.act.{HyperbolicTangent, Logistic}
 import nn.fn.lrn.{ConstantRate, AnnealingRate}
 import nn.fn.obj.CrossEntropyError
-import nn.fn.scr.BinaryClassificationScore
+import nn.fn.scr.{AbsoluteDiffScore, BinaryClassificationScore}
 import nn.trainers.ContrastiveDivergenceTrainer
 import nn.trainers.backprop.BackpropagationTrainer
 import nn.utils.Repository
@@ -65,12 +65,12 @@ object NNApp extends App {
           val trainSet = DemographicDataSet("data/salary/adult.data")
 
           val nn = ContrastiveDivergenceTrainer(
-            nn = RBM(trainSet.numInputs, 20, BinaryClassificationScore(.5), CrossEntropyError),
+            nn = RBM(trainSet.numInputs, 50, AbsoluteDiffScore, CrossEntropyError),
             iterations = 50000,
-            evalIterations = 100,
+            evalIterations = 1000,
             miniBatchSize = 100,
             numParallel = 1,
-            learningRate = AnnealingRate(1, 50000),
+            learningRate = AnnealingRate(.8, 50000),
             k = 2
           ).train(trainSet)
 

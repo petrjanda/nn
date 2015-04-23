@@ -6,8 +6,16 @@ import org.jblas.MatrixFunctions._
 
 case class BinaryClassificationScore(threshold:Double) extends ScoreFunction {
   def score(results:DoubleMatrix, targets:DoubleMatrix): Double = {
-    val scores = abs(targets.sub(floor(results.add(threshold))))
+    val diffs = abs(targets.sub(floor(results.add(threshold))))
 
-    1.0 - (scores.sum.abs / results.length)
+    diffs.sum.abs / results.columns
+  }
+}
+
+case object AbsoluteDiffScore extends ScoreFunction {
+  def score(results:DoubleMatrix, targets:DoubleMatrix): Double = {
+    val diffs = abs(targets.sub(results))
+
+    diffs.sum.abs / results.columns
   }
 }

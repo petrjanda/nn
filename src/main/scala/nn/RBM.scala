@@ -37,7 +37,7 @@ class RBM(val w:DoubleMatrix, val h:DoubleMatrix, val v:DoubleMatrix, score:Scor
   def eval(data: DataSet): Double = {
     val outputs = reconstruct(data)
 
-    score.score(outputs, outputs)
+    score.score(outputs, data.features)
   }
 
 

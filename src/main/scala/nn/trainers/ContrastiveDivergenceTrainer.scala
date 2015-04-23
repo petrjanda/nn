@@ -14,11 +14,14 @@ case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, eval
   def evalIteration(iteration: Int, trainingSet: DataSet) {
     if ((iteration + 1) % evalIterations == 0) {
       val loss = nn.loss(trainingSet)
-      println("Iteration:%5d, Loss: %.10f".format(iteration + 1, loss))
+      val score = nn.eval(trainingSet)
+      println("Iteration:%5d, Loss: %.10f, Diff: %.10f".format(iteration + 1, loss, score))
     }
   }
 
   def train(dataSet:DataSet):RBM = {
+    evalIteration(-1, dataSet)
+
     dataSet.miniBatches(miniBatchSize).grouped(numParallel).take(iterations).zipWithIndex.foreach {
       case (batches, iteration) =>
         val batch = batches(0)
