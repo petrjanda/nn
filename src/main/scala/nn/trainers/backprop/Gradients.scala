@@ -2,7 +2,7 @@ package nn.trainers.backprop
 
 import nn.ds.DataSet
 import nn.fn.{ObjectiveFunction, WeightDecay}
-import nn.{Layer, LayerState, NeuralNetwork}
+import nn.{FeedForwardNN, Layer, LayerState, FeedForwardNN$}
 import org.jblas.DoubleMatrix
 
 /**
@@ -10,7 +10,7 @@ import org.jblas.DoubleMatrix
  *
  * @param nn
  */
-case class Gradients(nn:NeuralNetwork) {
+case class Gradients(nn:FeedForwardNN) {
   val layers:List[Layer] = nn.layers
   val objective:ObjectiveFunction = nn.objective
   val weightDecay: WeightDecay = nn.weightDecay

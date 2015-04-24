@@ -1,6 +1,6 @@
 package nn.ds
 
-case class BucketsVariable[T](options:T*) extends Variable[T] {
+case class BucketsVariable[T](options:T*) extends RandomVariable[T] {
   val size: Int = options.size
 
   def apply(v:T):List[Double] = {

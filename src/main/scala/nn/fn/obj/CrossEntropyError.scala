@@ -6,7 +6,9 @@ import org.jblas.MatrixFunctions._
 
 object CrossEntropyError extends ObjectiveFunction {
   def apply(a: DoubleMatrix, y: DoubleMatrix): Double = {
-    - y.mul(log(a)).add(y.neg.add(1).mul(log(a.neg.add(1)))).columnSums.mean
+    import nn.utils.Matrices._
+
+    - y.mul(log(a)).add(y.neg.add(1).mul(log(a.neg.add(1)))).columnSums.filterInvaid.mean
   }
 
   def derivative(x: DoubleMatrix, y: DoubleMatrix): DoubleMatrix =

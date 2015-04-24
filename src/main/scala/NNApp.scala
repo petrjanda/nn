@@ -1,56 +1,65 @@
+import java.awt.image.Raster
 import java.io.File
+import javax.imageio.ImageWriter
 
+import com.sksamuel.scrimage.{RGBColor, Image, Format}
 import ds.salary.DemographicDataSet
 import nn._
+import nn.ds.DummyDataSet
 import nn.fn.WeightDecay
 import nn.fn.act.{HyperbolicTangent, Logistic}
 import nn.fn.lrn.AnnealingRate
 import nn.fn.obj.CrossEntropyError
-import nn.fn.scr.BinaryClassificationScore
+import nn.fn.scr.{AbsoluteDiffScore, BinaryClassificationScore}
 import nn.trainers.ContrastiveDivergenceTrainer
-import nn.trainers.backprop.Trainer
+import nn.trainers.backprop.BackpropagationTrainer
 import nn.utils.Repository
 import org.jblas.DoubleMatrix
-import org.jblas.MatrixFunctions._
-
-
+import nn.utils.Matrices._
 
 import scala.util.Random
 
 object NNApp extends App {
-  val net :: op :: Nil = args.toList
+  val net :: op :: tail = args.toList
 
   net match {
     case "ff" => {
-        val train = DemographicDataSet("data/salary/adult.data")
-        val test = DemographicDataSet("data/salary/adult.test")
+      op match {
 
-        val nn = NeuralNetwork(
-          Layer(train.numInputs, 10, HyperbolicTangent) :+
-          Layer(train.numOutputs, Logistic),
+        case "train" => {
+          val trainingPath :: Nil = tail
+          val trainingSet = DemographicDataSet(trainingPath)
 
-          objective = CrossEntropyError,
-          score = BinaryClassificationScore(.6),
-          weightDecay = WeightDecay(0.0)
-        )
+          val nn = FeedForwardNN(
+            Layer(trainingSet.numInputs, 10, HyperbolicTangent) :+
+              Layer(trainingSet.numOutputs, Logistic),
 
-        val base = nn.eval(test)
-        println(s"Iteration: base, Accuracy: $base")
+            objective = CrossEntropyError,
+            score = BinaryClassificationScore(.6),
+            weightDecay = WeightDecay(0.0)
+          )
 
-        Trainer(
-          numIterations = 50000,
-          miniBatchSize = 500,
-          learningRate = AnnealingRate(.1, 20000),
-          evalIterations = 2000,
-          momentumMultiplier = 0.2
-        ).train(nn, train)
+          BackpropagationTrainer(
+            nn = nn,
+            numIterations = 50000,
+            miniBatchSize = 500,
+            learningRate = AnnealingRate(.1, 20000),
+            evalIterations = 2000,
+            momentumMultiplier = 0.2
+          ).train(trainingSet)
 
-        val testing = nn.eval(test)
+          Repository.save(nn, "data/salary/net/ffn.o")
+        }
 
-        println(s"Iteration: test, Accuracy: $testing")
+        case "run" => {
+          val testingPath :: Nil = tail
+          val testingSet = DemographicDataSet(testingPath)
 
-        println(nn.layers.head.weights.getRow(0))
-        println(nn.layers.tail.head.weights)
+          val nn = Repository.load[FeedForwardNN]("data/salary/net/ffn.o")
+
+          println(nn.eval(testingSet))
+        }
+      }
     }
 
     case "rbm" => {
@@ -58,36 +67,77 @@ object NNApp extends App {
         case "train" => {
           implicit val rng = new Random(System.currentTimeMillis())
 
-          val trainSet = DemographicDataSet("data/salary/adult.data")
+          println("--> Loading MNIST dataset")
+          val mnist = MNIST.read("data/mnist/train-labels-idx1-ubyte", "data/mnist/train-images-idx3-ubyte", Some(100))
+          val trainSet = DummyDataSet(mnist._1, mnist._2)
+          println(s"--> ${trainSet.numExamples} samples loaded")
 
-          val nn = ContrastiveDivergenceTrainer(
-            nn = RBM(trainSet.numInputs, 100, CrossEntropyError),
+//          val trainSet = DemographicDataSet("data/salary/adult.data")
+
+          println(s"--> Starting Contrastive Divergence trainer")
+          val trainer:ContrastiveDivergenceTrainer = ContrastiveDivergenceTrainer(
+            nn = RBM(trainSet.numInputs, 128, AbsoluteDiffScore, CrossEntropyError),
             iterations = 50000,
-            evalIterations = 100,
-            miniBatchSize = 100,
+            evalIterations = 1000,
+            miniBatchSize = 20,
             numParallel = 1,
-            learningRate = 0.8,
-            k = 2
-          ).train(trainSet)
+            learningRate = AnnealingRate(.5, 50000),
+            k = 1
+          )
+          println(s"--> trainer: ${trainer.toString}")
+          println(s"--> network: ${trainer.nn.toString}")
 
+          val nn = trainer.train(trainSet, { (i, nn) =>
+            mat2img(nn.w.getColumns(Range(0, 20).toArray).data.toList, 1).write(new File(s"train-$i.png"))
+          })
+
+          println(s"--> Saving network to 'data/salary/net/rbm.o'")
           Repository.save(nn, "data/salary/net/rbm.o")
 
+          println(s"--> Writing weights to the JSON file")
           writeToFile("weights.txt", printMat(nn.w))
+
+          println(s"--> Done.")
         }
 
         case "run" => {
-          val nn2 = Repository.load[RBM]("data/salary/net/rbm.o")
-          val testSet = DemographicDataSet("data/salary/adult.test")
-//          val s = System.currentTimeMillis()
-          val reconstructed = nn2.reconstruct(testSet)
 
-          println(nn2.loss(testSet))
-//          println(System.currentTimeMillis() - s)
+          val nn = Repository.load[RBM]("data/salary/net/rbm.o")
+//          val testSet = DemographicDataSet("data/salary/adult.test")
 
-//          println(BinaryClassificationScore(.5).score(testSet.inputs, reconstructed))
+          val mnist = MNIST.read("data/mnist/t10k-labels-idx1-ubyte", "data/mnist/t10k-images-idx3-ubyte", Some(20))
+          val testSet = DummyDataSet(mnist._1, mnist._2)
+
+          import scala.collection.JavaConversions._
+
+          val in = testSet.features
+          val out = nn.reconstruct(testSet)
+          val pixels = in.columnsAsList().toList.zip(out.columnsAsList().toList).map {
+            case (a, b) => a.data.toList.grouped(28).toList.zip(b.data.toList.grouped(28).toList).map {
+              case (a, b) => a ::: b
+            }.flatten
+          }
+
+          mat2img(pixels.flatten, 2).write(new File("in.png"))
+
+
+
+//          println(nn.loss(testSet))
         }
       }
     }
+  }
+
+  def mat2img(m: List[Double], w:Int) = {
+    val max = m.map(_.abs).max
+
+    val data = m.map { i => {
+      val c = 127 + (255 * i / max / 2).toInt
+
+      RGBColor(c, c, c, 255).toInt
+    } }
+
+    Image(w*28, m.length / (w*28), data.toArray)
   }
 
   def printMat(mat:DoubleMatrix) = {
