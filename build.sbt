@@ -6,5 +6,6 @@ scalaVersion := "2.11.6"
 
 libraryDependencies ++= Seq(
   "org.jblas" % "jblas" % "1.2.2",
-  "org.scalatest" % "scalatest_2.11" % "2.2.1" % "test"
+  "org.scalatest" % "scalatest_2.11" % "2.2.1" % "test",
+  "com.sksamuel.scrimage" %% "scrimage-core" % "1.4.2"
 )

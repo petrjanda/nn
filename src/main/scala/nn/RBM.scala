@@ -19,6 +19,9 @@ object RBM {
 }
 
 class RBM(val w:DoubleMatrix, val h:DoubleMatrix, val v:DoubleMatrix, score:ScoreFunction, objective:ObjectiveFunction) extends Serializable with NeuralNetwork {
+  lazy val numVisible = w.rows
+  lazy val numHidden = w.columns
+
   def propagateUp(value: DoubleMatrix): DoubleMatrix =
     Logistic(w.transpose.mmul(value).addColumnVector(h))
 
@@ -31,13 +34,17 @@ class RBM(val w:DoubleMatrix, val h:DoubleMatrix, val v:DoubleMatrix, score:Scor
   def loss(data: DataSet): Double = {
     val outputs = reconstruct(data)
     
-    objective(outputs, data.features)
+    objective(outputs, data.features) / numVisible
   }
 
   def eval(data: DataSet): Double = {
     val outputs = reconstruct(data)
 
-    score.score(outputs, data.features)
+    score.score(outputs, data.features) / numVisible
+  }
+
+  override def toString = {
+    s"numVisible: ${w.rows}, numHidden: ${w.columns}, score fn: $score, objective fn: $objective"
   }
 
 

@@ -8,25 +8,25 @@ import org.jblas.DoubleMatrix
 
 import scala.util.Random
 
-case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, evalIterations:Int, miniBatchSize:Int, numParallel:Int, learningRate:LearningFunction, k:Int)(implicit rng:Random) {
-  import scala.collection.JavaConversions._
-
-  def evalIteration(iteration: Int, trainingSet: DataSet) {
+case class ContrastiveDivergenceTrainer(var nn:RBM, iterations:Int, evalIterations:Int, miniBatchSize:Int, numParallel:Int, learningRate:LearningFunction, k:Int)(implicit rng:Random) {
+  def evalIteration(iteration: Int, trainingSet: DataSet, f:(Int, RBM) => Unit) {
     if ((iteration + 1) % evalIterations == 0) {
+      f(iteration, nn)
+
       val loss = nn.loss(trainingSet)
       val score = nn.eval(trainingSet)
       println("Iteration:%5d, Loss: %.10f, Diff: %.10f".format(iteration + 1, loss, score))
     }
   }
 
-  def train(dataSet:DataSet):RBM = {
-    evalIteration(-1, dataSet)
+  def train(dataSet:DataSet, f:(Int, RBM) => Unit):RBM = {
+    evalIteration(-1, dataSet, f)
 
     dataSet.miniBatches(miniBatchSize).grouped(numParallel).take(iterations).zipWithIndex.foreach {
       case (batches, iteration) =>
         val batch = batches(0)
 
-        evalIteration(iteration, dataSet)
+        evalIteration(iteration, dataSet, f)
 
         val divergence = contrastiveDivergence(batch.numExamples, batch.features)
 
@@ -70,7 +70,11 @@ case class ContrastiveDivergenceTrainer(private var nn:RBM, iterations:Int, eval
     val hBias = inputSample.sample.sub(g.hvMean).mul(rate)
     val vBias = input.sub(g.vhSample).mul(rate)
 
-    (weights, hBias.rowMeans(), vBias.rowMeans())
+    (weights, hBias.rowMeans, vBias.rowMeans)
+  }
+
+  override def toString = {
+    s"iterations: $iterations, miniBatchSize: $miniBatchSize, numParallel: $numParallel, learningRate: $learningRate, k: $k"
   }
 }
 
