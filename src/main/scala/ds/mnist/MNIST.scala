@@ -1,3 +1,5 @@
+package ds.mnist
+
 import java.io.{DataInputStream, FileInputStream}
 
 import org.jblas.DoubleMatrix

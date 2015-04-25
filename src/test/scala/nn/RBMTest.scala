@@ -1,6 +1,7 @@
 package nn
 
 import nn.ds.DataSet
+import nn.fn.act.HyperbolicTangent
 import nn.fn.lrn.ConstantRate
 import nn.fn.obj.CrossEntropyError
 import nn.fn.scr.BinaryClassificationScore
@@ -32,7 +33,7 @@ class RBMTest extends FlatSpec with Matchers {
     ))
 
     val trainer = ContrastiveDivergenceTrainer(
-      nn = RBM(3, 2, BinaryClassificationScore(.5), CrossEntropyError),
+      nn = RBM(3, 2, BinaryClassificationScore(.5), HyperbolicTangent, CrossEntropyError),
       iterations = 1000,
       evalIterations = 10000,
       miniBatchSize = 5,
@@ -41,13 +42,13 @@ class RBMTest extends FlatSpec with Matchers {
       k = 2
     )
 
-    val rbm = trainer.train(trainSet)
+    val rbm = trainer.train(trainSet, (i, nn) => { })
 
     println(rbm.loss(testSet))
 
     rbm.reconstruct(testSet) should equal(
       new DoubleMatrix(3, 1,
-        0.0034251569426307998, 0.9972447999914791, 0.9970672848954149
+        0.0, 0.9743638991114707, 0.9745655719932147
       )
     )
   }

@@ -2,13 +2,14 @@ import java.awt.image.Raster
 import java.io.File
 import javax.imageio.ImageWriter
 
+import _root_.ds.mnist.MNIST
 import com.sksamuel.scrimage.{RGBColor, Image, Format}
 import ds.salary.DemographicDataSet
 import nn._
 import nn.ds.DummyDataSet
 import nn.fn.WeightDecay
 import nn.fn.act.{HyperbolicTangent, Logistic}
-import nn.fn.lrn.AnnealingRate
+import nn.fn.lrn.{ConstantRate, AnnealingRate}
 import nn.fn.obj.CrossEntropyError
 import nn.fn.scr.{AbsoluteDiffScore, BinaryClassificationScore}
 import nn.trainers.ContrastiveDivergenceTrainer
@@ -76,19 +77,19 @@ object NNApp extends App {
 
           println(s"--> Starting Contrastive Divergence trainer")
           val trainer:ContrastiveDivergenceTrainer = ContrastiveDivergenceTrainer(
-            nn = RBM(trainSet.numInputs, 128, AbsoluteDiffScore, CrossEntropyError),
-            iterations = 50000,
+            nn = RBM(trainSet.numInputs, 10, AbsoluteDiffScore, Logistic, CrossEntropyError),
+            iterations = 6000,
             evalIterations = 1000,
-            miniBatchSize = 20,
+            miniBatchSize = 50,
             numParallel = 1,
-            learningRate = AnnealingRate(.5, 50000),
+            learningRate = ConstantRate(.5),
             k = 1
           )
           println(s"--> trainer: ${trainer.toString}")
           println(s"--> network: ${trainer.nn.toString}")
 
           val nn = trainer.train(trainSet, { (i, nn) =>
-            mat2img(nn.w.getColumns(Range(0, 20).toArray).data.toList, 1).write(new File(s"train-$i.png"))
+            mat2img(nn.w.getColumns(Range(0, 10).toArray).data.toList, 1).write(new File(s"train-$i.png"))
           })
 
           println(s"--> Saving network to 'data/salary/net/rbm.o'")

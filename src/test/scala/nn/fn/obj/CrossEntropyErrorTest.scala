@@ -3,12 +3,12 @@ package nn.fn.obj
 import org.jblas.DoubleMatrix
 import org.scalatest.{FlatSpec, Matchers, FreeSpec}
 
-class CrossEntropyTest extends FlatSpec with Matchers {
+class CrossEntropyErrorTest extends FlatSpec with Matchers {
   it should "a = 0.1, y = 1" in {
     val y = new DoubleMatrix(1, 1, 0.1)
     val t = new DoubleMatrix(1, 1, 1)
 
-    CrossEntropyError(y, t) should equal(2.6505471613957483)
+    CrossEntropyError(y, t) should equal(2.3025850929940455)
   }
 
   it should "a = 0.9, t = 0" in {
